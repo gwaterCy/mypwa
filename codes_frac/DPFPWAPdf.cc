@@ -22,9 +22,10 @@
 #include <fstream>
 #include "phikk_structure.h"
 #include "phipipi_structure.h"
-
+#include "kernel_calEva,h"
 #include <sstream>
 #include <iomanip>
+#include "conf.h"
 
 /*#include "RooAbsReal.h"
 #include "RooListProxy.h"
@@ -460,16 +461,98 @@ Double_t DPFPWAPdf::evaluate() const
 //    return - sum;
 //    //return exp(- sum / analyticalIntegral(1, ""));
 }
+void DPFPWAPdf::cu_inti_data(my_float &* h_float_pp,int &* h_parameter,double &* h_paraList,my_float *h_fx,my_float &* h_mlk,int iEnd)
+{
+    int array_num = sizeof(cu_PWA_PARAS) / sizeof(my_float);
+    int array_size = array_num * iEnd;
+    int mem_size = array_size * sizeof(my_float);
+    //init h_float_pp
+    h_float_pp = (my_float *)malloc(mem_size);
+    for(int i=0;i<iEnd;i++)
+    {
+        Double_t * k=(Double_t)&pwa_paras[i];
+        for(int j=0;j<array_num;j++)
+            h_float_pp[i*array_num+j]=(my_float)k[j];
+    }
+    //init h_parameter
+    h_parameter=(int *)malloc(18*sizeof(int));
 
+    h_parameter[0] =  _CN_spinList;
+    h_parameter[1] =  _CN_massList;
+    h_parameter[2] =  _CN_mass2List;
+    h_parameter[3] =  _CN_widthList;
+    h_parameter[4] =  _CN_g1List;
+    h_parameter[5] =  _CN_g2List;
+    h_parameter[6] =  _CN_b1List;
+    h_parameter[7] =  _CN_b2List;
+    h_parameter[8] =  _CN_b3List;
+    h_parameter[9] =  _CN_b4List;
+    h_parameter[10] =  _CN_b5List;
+    h_parameter[11] =  _CN_rhoList;
+    h_parameter[12] =  _CN_fracList;
+    h_parameter[13] =  _CN_phiList;
+    h_parameter[14] =  _CN_propList;
+    h_parameter[15] =  nAmps;
+    h_parameter[16] =  Nmc;
+    h_parameter[17] = Nmc_data; 
+    //init h_paraList
+    double * h_paraList=(double *)malloc(paraList.size()*sizeof(double));
+    for(int i=0;i<paraList.size();i++)
+    {
+        h_paraList[i]=paraList[i];
+    }
+    //init h_fx
+    my_float *h_fx=(my_float *)malloc(iEnd*sizeof(my_float));
+    //init h_mlk
+    h_mlk = new my_float*[(Nmc + Nmc_data)*nAmps];
+    double * h_paraList=(double *)malloc(paraList.size()*sizeof(double));
+    for(int i=0;i<paraList.size();i++)
+    {
+        h_paraList[i]=paraList[i];
+    }
+    //init h_fx
+    my_float *h_fx=(my_float *)malloc(iEnd*sizeof(my_float));
+    //init h_mlk
+    h_mlk = new my_float*[(Nmc + Nmc_data)*nAmp];
+    //
+}
 void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     paras_getval();
 #pragma omp parallel for
     //for(int i = 0; i < Nmc + Nmc_data; i++) {
-    for(int i = iBegin; i < iEnd; i++) {
-        double sum = calEva(pwa_paras[i], i);
+    //for(int i = iBegin; i < iEnd; i++) {
+    //    double sum = calEva(pwa_paras[i], i);
         //fx[i] = (sum <= 0) ? 1e-20 : sum;
-        fx[i] = sum;
+    //    fx[i] = sum;
+    //}
+    my_float *h_float_pp;
+    ini *h_parameter;
+    double *h_paraList;
+    my_float *h_fx;
+    my_float *h_mlk;
+
+    cu_inti_data(h_float_pp,h_parameter,h_paraList,h_fx,h_mlk,iEnd);
+    host_store_fx(h_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
+   
+    for(int i = 0; i < Nmc + Nmc_data; i++) {
+        for(int j=0;j<nAmps;j++)
+        {
+            mlk[i][j]=h_mlk[i*nAmps+j];
+        }
     }
+    
+    for(int i=Begin;i<iEnd;i++)
+    {
+        fx[i]=h_fx[i];
+    }
+
+    //free memory
+    free(h_float_pp);
+    free(h_parameter);
+    free(h_paraList);
+    free(h_fx);
+    free(f_mlk);
+
     Double_t sum = 0;
     Double_t carry = 0;
 #pragma omp parallel for private(carry) reduction(+:sum)
