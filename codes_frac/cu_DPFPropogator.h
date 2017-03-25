@@ -1,14 +1,13 @@
 #ifndef CU_DPF_PROPOGATOR_HH
 #define CU_DPF_PROPOGATOR_HH
 
-#include "conf.h"
 #include <cuda_runtime.h>
 
-  __device__ TComplex cro(my_float sx, my_float am1, my_float am2);
-  __device__ TComplex propogator980(my_float mass, my_float g11, my_float g22,my_float sx);
-  __device__ TComplex pip(my_float sx);
-  __device__ TComplex propogator600(my_float mass, my_float b1, my_float b2, my_float b3, my_float b4, my_float b5, my_float sx);
-  __device__ TComplex propogator(my_float mass,my_float width,my_float sx) ;
-  __device__ TComplex propogator1270(my_float mass,my_float width,my_float sx) ;
+  __device__ double2 cro(double sx, double am1, double am2);
+  __device__ double2 propogator980(double mass, double g11, double g22,double sx);
+  __device__ double2 pip(double sx);
+  __device__ double2 propogator600(double mass, double b1, double b2, double b3, double b4, double b5, double sx);
+  __device__ double2 propogator(double mass,double width,double sx) ;
+  __device__ double2 propogator1270(double mass,double width,double sx) ;
 
 #endif

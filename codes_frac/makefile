@@ -10,7 +10,7 @@ GLIBS = $(ROOTGLIBS)
 CODEDIR = ./
 CURRDIR = $(shell pwd)
 INCLUDES = $(CXXFLAGS) -D USEROOT -D ROO_COMPLEX -I$(CODEDIR) -D FIXPHI
-OBJS = pwa.o DPFPWAPoint.o DPFPWAPdf.o DPFAngular.o DPFPropogator.o common_tools.o phikk_structure.o phipipi_structure.o fitproxy.o PWA_CTRL.o gpuCode.o
+OBJS = pwa.o DPFPWAPoint.o DPFPWAPdf.o DPFAngular.o DPFPropogator.o common_tools.o phikk_structure.o phipipi_structure.o fitproxy.o PWA_CTRL.o gpuCode.o cu_DPFPropogator.o kernel_calEva.o
 EXEC = pwa
 
 $(EXEC):$(OBJS)

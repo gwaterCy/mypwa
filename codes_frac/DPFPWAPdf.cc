@@ -25,7 +25,7 @@
 #include "kernel_calEva.h"
 #include <sstream>
 #include <iomanip>
-#include "conf.h"
+#include "cu_PWA_PARAS.h"
 
 /*#include "RooAbsReal.h"
 #include "RooListProxy.h"
@@ -461,18 +461,18 @@ Double_t DPFPWAPdf::evaluate() const
 //    return - sum;
 //    //return exp(- sum / analyticalIntegral(1, ""));
 }
-void DPFPWAPdf::cu_inti_data(my_float * &h_float_pp,int * &h_parameter,double * &h_paraList,my_float *&h_fx,my_float * &h_mlk,int iEnd)
+void DPFPWAPdf::cu_init_data(double * &h_float_pp,int * &h_parameter,double * &h_paraList,double *&h_fx,double * &h_mlk,int iEnd) const
 {
-    int array_num = sizeof(cu_PWA_PARAS) / sizeof(my_float);
+    int array_num = sizeof(cu_PWA_PARAS) / sizeof(double);
     int array_size = array_num * iEnd;
-    int mem_size = array_size * sizeof(my_float);
+    int mem_size = array_size * sizeof(double);
     //init h_float_pp
-    h_float_pp = (my_float *)malloc(mem_size);
+    h_float_pp = (double *)malloc(mem_size);
     for(int i=0;i<iEnd;i++)
     {
-        Double_t * k=(Double_t)&pwa_paras[i];
+        Double_t * k=(Double_t*)&pwa_paras[i];
         for(int j=0;j<array_num;j++)
-            h_float_pp[i*array_num+j]=(my_float)k[j];
+            h_float_pp[i*array_num+j]=(double)k[j];
     }
     //init h_parameter
     h_parameter=(int *)malloc(18*sizeof(int));
@@ -496,42 +496,38 @@ void DPFPWAPdf::cu_inti_data(my_float * &h_float_pp,int * &h_parameter,double * 
     h_parameter[16] =  Nmc;
     h_parameter[17] = Nmc_data; 
     //init h_paraList
-    double * h_paraList=(double *)malloc(paraList.size()*sizeof(double));
+    h_paraList=(double *)malloc(paraList.size()*sizeof(double));
     for(int i=0;i<paraList.size();i++)
     {
         h_paraList[i]=paraList[i];
     }
     //init h_fx
-    my_float *h_fx=(my_float *)malloc(iEnd*sizeof(my_float));
+    h_fx=(double *)malloc(iEnd*sizeof(double));
     //init h_mlk
-    h_mlk = new my_float*[(Nmc + Nmc_data)*nAmps];
-    double * h_paraList=(double *)malloc(paraList.size()*sizeof(double));
+    h_mlk = new double[(Nmc + Nmc_data)*nAmps];
+    //init h_paraList
+    h_paraList=(double *)malloc(paraList.size()*sizeof(double));
     for(int i=0;i<paraList.size();i++)
     {
         h_paraList[i]=paraList[i];
     }
-    //init h_fx
-    my_float *h_fx=(my_float *)malloc(iEnd*sizeof(my_float));
-    //init h_mlk
-    h_mlk = new my_float*[(Nmc + Nmc_data)*nAmp];
-    //
 }
 void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     paras_getval();
-#pragma omp parallel for
+//#pragma omp parallel for
     //for(int i = 0; i < Nmc + Nmc_data; i++) {
     //for(int i = iBegin; i < iEnd; i++) {
     //    double sum = calEva(pwa_paras[i], i);
         //fx[i] = (sum <= 0) ? 1e-20 : sum;
     //    fx[i] = sum;
     //}
-    my_float *h_float_pp;
+    double *h_float_pp;
     int *h_parameter;
     double *h_paraList;
-    my_float *h_fx;
-    my_float *h_mlk;
+    double *h_fx;
+    double *h_mlk;
 
-    cu_inti_data(h_float_pp,h_parameter,h_paraList,h_fx,h_mlk,iEnd);
+    cu_init_data(h_float_pp,h_parameter,h_paraList,h_fx,h_mlk,iEnd);
     host_store_fx(h_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
    
     for(int i = 0; i < Nmc + Nmc_data; i++) {
@@ -541,7 +537,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         }
     }
     
-    for(int i=Begin;i<iEnd;i++)
+    for(int i=iBegin;i<iEnd;i++)
     {
         fx[i]=h_fx[i];
     }
@@ -551,7 +547,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     free(h_parameter);
     free(h_paraList);
     free(h_fx);
-    free(f_mlk);
+    free(h_mlk);
 
     Double_t sum = 0;
     Double_t carry = 0;

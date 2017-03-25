@@ -7,14 +7,13 @@
 
 #ifndef _KERNEL_CALEVA_H
 #define _KERNEL_CALEVA_H
-#include <vector>
-#include "conf.h"
-//#include "calEva.h"
+
+
 //#include "cu_PWA_PARAS.h"
     //int initialize_data(std::vector<PWA_PARAS>&, DataPointers&); // 把vector数据和指针数据对应起来，并copy到gpu里面去
     //int data_distribution(DataPointers&, CudaDataPointers&); // 把vector数据和指针数据对应起来，并copy到gpu里面去
-    //my_float calEva(const PWA_PARAS &pp, int idp);
-    //my_float kernel_calEva(const PWA_PARAS &pp,int idp);
+    //double calEva(const PWA_PARAS &pp, int idp);
+    //double kernel_calEva(const PWA_PARAS &pp,int idp);
     //void func(DataPointers& cpu_data_pointers);
-    int host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int para_size, my_float *h_fx,my_float ** h_mlk,int numElements,int begin);
+    int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int numElements,int begin);
 #endif

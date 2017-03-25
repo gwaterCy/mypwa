@@ -180,7 +180,7 @@ class DPFPWAPdf : public RooAbsPdf {
         mutable vector<Double_t> fx;
         //vector<PWA_PARAS> pwa_paras_data;
         mutable bool update_fx;
-        void cu_inti_data(double * &h_float_pp,int * &h_parameter,double * &h_paraList,double *&h_fx,double* &h_mlk,int iEnd);
+        void cu_init_data(double * &h_float_pp,int * &h_parameter,double * &h_paraList,double *&h_fx,double* &h_mlk,int iEnd) const;
         void store_pwa_paras(); //用来进行内存换时间的操作，将所有需要的PWA_PARAS参数放到队列pwa_paras和pwa_paras_data中去
         void store_fx(int, int) const;
     private:

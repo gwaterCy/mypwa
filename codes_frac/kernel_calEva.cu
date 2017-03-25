@@ -5,18 +5,18 @@
 #include <vector>
 #include <fstream>
 #include <math.h>
-#include "DPFPropogator.h"
+#include "cu_DPFPropogator.h"
 #include "kernel_calEva.h"
-#include "conf.h"
+
 
 using namespace std;
 
 #define CUDA_CALL(x) {const cudaError_t a=(x); if(a != cudaSuccess) {printf("\nCUDAError:%s(err_num=%d)\n",cudaGetErrorString(a),a); cudaDeviceReset(); }}
 
-    my_float **mlk;
+    double **mlk;
 
 
- __device__ my_float calEva(const cu_PWA_PARAS *pp, const int * parameter , const double * d_paraList,my_float *d_mlk,int idp) 
+ __device__ double calEva(const cu_PWA_PARAS *pp, const int * parameter , const double * d_paraList,double *d_mlk,int idp) 
     ////return square of complex amplitude
 {
     //	static int A=0;
@@ -38,45 +38,45 @@ using namespace std;
     int _N_phiList      =parameter[13];
     int _N_propList     =parameter[14];
     const int const_nAmps=parameter[15];
-    my_float value = 0.;
-    //TComplex fCF[const_nAmps][4];
-    TComplex (*fCF)[4]=(TComplex (*)[4])malloc(sizeof(TComplex)*const_nAmps*4);
-    //TComplex fCP[const_nAmps];
-    TComplex * fCP=(TComplex *)malloc(sizeof(TComplex)*const_nAmps);
-    //TComplex pa[const_nAmps][const_nAmps];
-    TComplex **pa,**fu;
-    pa=(TComplex **)malloc(sizeof(TComplex *)*const_nAmps);
-    fu=(TComplex **)malloc(sizeof(TComplex *)*const_nAmps);
+    double value = 0.;
+    //double2 fCF[const_nAmps][4];
+    double2 (*fCF)[4]=(double2 (*)[4])malloc(sizeof(double2)*const_nAmps*4);
+    //double2 fCP[const_nAmps];
+    double2 * fCP=(double2 *)malloc(sizeof(double2)*const_nAmps);
+    //double2 pa[const_nAmps][const_nAmps];
+    double2 **pa,**fu;
+    pa=(double2 **)malloc(sizeof(double2 *)*const_nAmps);
+    fu=(double2 **)malloc(sizeof(double2 *)*const_nAmps);
     for(int i=0;i<const_nAmps;i++)
     {
-        pa[i]=(TComplex *)malloc(sizeof(TComplex)*const_nAmps);
-        fu[i]=(TComplex *)malloc(sizeof(TComplex)*const_nAmps);
+        pa[i]=(double2 *)malloc(sizeof(double2)*const_nAmps);
+        fu[i]=(double2 *)malloc(sizeof(double2)*const_nAmps);
     }
-    //TComplex fu[const_nAmps][const_nAmps];
-    //TComplex crp1[const_nAmps];
-    TComplex * crp1=(TComplex *)malloc(sizeof(TComplex)*const_nAmps);
-    //TComplex crp11[const_nAmps];
-    TComplex * crp11=(TComplex *)malloc(sizeof(TComplex)*const_nAmps);
-    TComplex cr0p11;
-    //TComplex ca2p1;
-    TComplex cw2p11;
-    TComplex cw2p12;
-    TComplex cw2p15;
-    TComplex cw;
-    TComplex c1p12_12,c1p13_12,c1p12_13,c1p13_13,c1p12_14,c1p13_14;
-    TComplex cr1m12_1,cr1m13_1;
-    TComplex crpf1,crpf2;
+    //double2 fu[const_nAmps][const_nAmps];
+    //double2 crp1[const_nAmps];
+    double2 * crp1=(double2 *)malloc(sizeof(double2)*const_nAmps);
+    //double2 crp11[const_nAmps];
+    double2 * crp11=(double2 *)malloc(sizeof(double2)*const_nAmps);
+    double2 cr0p11;
+    //double2 ca2p1;
+    double2 cw2p11;
+    double2 cw2p12;
+    double2 cw2p15;
+    double2 cw;
+    double2 c1p12_12,c1p13_12,c1p12_13,c1p13_13,c1p12_14,c1p13_14;
+    double2 cr1m12_1,cr1m13_1;
+    double2 crpf1,crpf2;
 
     for(int index=0; index<const_nAmps; index++) {
-        my_float rho0 = d_paraList[_N_rhoList++];
-        my_float frac0 = d_paraList[_N_fracList++];
-        my_float phi0 = d_paraList[_N_phiList++];
+        double rho0 = d_paraList[_N_rhoList++];
+        double frac0 = d_paraList[_N_fracList++];
+        double phi0 = d_paraList[_N_phiList++];
         int spin_now = d_paraList[_N_spinList++];
         int propType_now = d_paraList[_N_propList++];
     //cout<<"haha: "<< __LINE__ << endl;
 
         rho0 *= std::exp(frac0);
-        fCP[index]=make_complex(rho0*std::cos(phi0),rho0*std::sin(phi0));
+        fCP[index]=make_cuDoubleComplex(rho0*std::cos(phi0),rho0*std::sin(phi0));
         //        //cout<<"fCP[index]="<<fCP[index]<<endl;
         //std::cout << __FILE__ << __LINE__ << " : " << propType_now << std::endl;
         switch(propType_now)
@@ -86,8 +86,8 @@ using namespace std;
             case 1:
                 {
                     //RooRealVar *width = (RooRealVar*)_widthIterV[omp_id]->Next();
-                    my_float mass0 = d_paraList[_N_massList++];
-                    my_float width0 = d_paraList[_N_widthList++];
+                    double mass0 = d_paraList[_N_massList++];
+                    double width0 = d_paraList[_N_widthList++];
                     //					//cout<<"mass0="<<mass0<<endl;
                     //					//cout<<"width0="<<width0<<endl;
                     crp1[index]=propogator(mass0,width0,pp->s23);
@@ -98,11 +98,11 @@ using namespace std;
                 {
                     //RooRealVar *g1 = (RooRealVar*)_g1IterV[omp_id]->Next();
                     //RooRealVar *g2 = (RooRealVar*)_g2IterV[omp_id]->Next();
-                    my_float mass980 = d_paraList[_N_massList++];
-                    my_float g10 = d_paraList[_N_g1List++];
-                    my_float g20 = d_paraList[_N_g2List++];
-                    //my_float g10=g1->getVal();
-                    //my_float g20=g2->getVal();
+                    double mass980 = d_paraList[_N_massList++];
+                    double g10 = d_paraList[_N_g1List++];
+                    double g20 = d_paraList[_N_g2List++];
+                    //double g10=g1->getVal();
+                    //double g20=g2->getVal();
      //               			//cout<<"mass980="<<mass980<<endl;
      //               			//cout<<"g10="<<g10<<endl;
      //               			//cout<<"g20="<<g20<<endl;
@@ -119,18 +119,18 @@ using namespace std;
                     //RooRealVar *b3 = (RooRealVar*)_b3IterV[omp_id]->Next();
                     //RooRealVar *b4 = (RooRealVar*)_b4IterV[omp_id]->Next();
                     //RooRealVar *b5 = (RooRealVar*)_b5IterV[omp_id]->Next();
-                    //my_float mass600=mass->getVal();
-                    //my_float b10=b1->getVal();
-                    //my_float b20=b2->getVal();
-                    //my_float b30=b3->getVal();
-                    //my_float b40=b4->getVal();
-                    //my_float b50=b5->getVal();
-                    my_float mass600 = d_paraList[_N_massList++];
-                    my_float b10 = d_paraList[_N_b1List++];
-                    my_float b20 = d_paraList[_N_b2List++];
-                    my_float b30 = d_paraList[_N_b3List++];
-                    my_float b40 = d_paraList[_N_b4List++];
-                    my_float b50 = d_paraList[_N_b5List++];
+                    //double mass600=mass->getVal();
+                    //double b10=b1->getVal();
+                    //double b20=b2->getVal();
+                    //double b30=b3->getVal();
+                    //double b40=b4->getVal();
+                    //double b50=b5->getVal();
+                    double mass600 = d_paraList[_N_massList++];
+                    double b10 = d_paraList[_N_b1List++];
+                    double b20 = d_paraList[_N_b2List++];
+                    double b30 = d_paraList[_N_b3List++];
+                    double b40 = d_paraList[_N_b4List++];
+                    double b50 = d_paraList[_N_b5List++];
                     crp1[index]=propogator600(mass600,b10,b20,b30,b40,b50,pp->s23);
                     //			//cout<<"crp1[index]3="<<crp1[index]<<endl;
                 }
@@ -139,10 +139,10 @@ using namespace std;
             case 4:
                 {
                     //RooRealVar *width = (RooRealVar*)_widthIterV[omp_id]->Next();
-                    //my_float mass0=mass->getVal();
-                    //my_float width0=width->getVal();
-                    my_float mass0 = d_paraList[_N_massList++];
-                    my_float width0 = d_paraList[_N_widthList++];
+                    //double mass0=mass->getVal();
+                    //double width0=width->getVal();
+                    double mass0 = d_paraList[_N_massList++];
+                    double width0 = d_paraList[_N_widthList++];
                     crp1[index]=propogator(mass0,width0,pp->sv2);
                     crp11[index]=propogator(mass0,width0,pp->sv3);
                 }
@@ -153,22 +153,22 @@ using namespace std;
                     //RooRealVar *mass2  = (RooRealVar*)_mass2IterV[omp_id]->Next();
                     //RooRealVar *g1 = (RooRealVar*)_g1IterV[omp_id]->Next();
                     //RooRealVar *g2 = (RooRealVar*)_g2IterV[omp_id]->Next();
-                    //my_float mass980=mass2->getVal();
-                    //my_float g10=g1->getVal();
-                    //my_float g20=g2->getVal();
-                    my_float mass980 = d_paraList[_N_mass2List++];
-                    my_float g10 = d_paraList[_N_g1List++];
-                    my_float g20 = d_paraList[_N_g2List++];
+                    //double mass980=mass2->getVal();
+                    //double g10=g1->getVal();
+                    //double g20=g2->getVal();
+                    double mass980 = d_paraList[_N_mass2List++];
+                    double g10 = d_paraList[_N_g1List++];
+                    double g20 = d_paraList[_N_g2List++];
                     //					//cout<<"mass980="<<mass980<<endl;
                     //					//cout<<"g10="<<g10<<endl;
                     //					//cout<<"g20="<<g20<<endl;
                     crp1[index]=propogator980(mass980,g10,g20,pp->sv);
                     //					//cout<<"crp1[index]="<<crp1[index]<<endl;
                     //RooRealVar *width = (RooRealVar*)_widthIterV[omp_id]->Next();
-                    //my_float mass1680=mass->getVal();
-                    //my_float width1680=width->getVal();
-                    my_float mass1680 = d_paraList[_N_massList++];
-                    my_float width1680 = d_paraList[_N_widthList++];
+                    //double mass1680=mass->getVal();
+                    //double width1680=width->getVal();
+                    double mass1680 = d_paraList[_N_massList++];
+                    double width1680 = d_paraList[_N_widthList++];
                     //					//cout<<"mass1680="<<mass1680<<endl;
                     //					//cout<<"width1680="<<width1680<<endl;
                     crp11[index]=propogator(mass1680,width1680,pp->s23);
@@ -178,10 +178,10 @@ using namespace std;
             case 6:
                 {
                     //RooRealVar *width = (RooRealVar*)_widthIterV[omp_id]->Next();
-                    //my_float mass0=mass->getVal();
-                    //my_float width0=width->getVal();
-                    my_float mass0 = d_paraList[_N_massList++];
-                    my_float width0 = d_paraList[_N_widthList++];
+                    //double mass0=mass->getVal();
+                    //double width0=width->getVal();
+                    double mass0 = d_paraList[_N_massList++];
+                    double width0 = d_paraList[_N_widthList++];
                     //					//cout<<"mass0="<<mass0<<endl;
                     //					//cout<<"width0="<<width0<<endl;
                     crp1[index]=propogator1270(mass0,width0,pp->s23);
@@ -317,29 +317,29 @@ using namespace std;
         }
 
     }
-    my_float carry(0);
-    //#pragmaint host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int para_size, my_float *h_fx,int numElements,int begin) omp parallel for reduction(+:value)
+    double carry(0);
+    //#pragmaint host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,int numElements,int begin) omp parallel for reduction(+:value)
     for(int i=0;i<const_nAmps;i++){
-        //  //cout<<"haha: "<< __LINE__ << endl;    int mlk_cro_size=sizeof(my_float)*numElements
+        //  //cout<<"haha: "<< __LINE__ << endl;    int mlk_cro_size=sizeof(double)*numElements
         for(int j=0;j<const_nAmps;j++){
             cw=cuCmul(fCP[i],cuConj(fCP[j]));
             //    //cout<<"cw="<<cw<<endl;
-            if(i==j) pa[i][j]=make_complex(cuCreal(cw),0.0);
-            else if(i<j) pa[i][j]=make_complex(2*cuCreal(cw),0.0);
-            else pa[i][j]=make_complex(0.0,2*cuCimag(cw));
-            cw=make_complex(0.0,0.0);
+            if(i==j) pa[i][j]=make_cuDoubleComplex(cuCreal(cw),0.0);
+            else if(i<j) pa[i][j]=make_cuDoubleComplex(2*cuCreal(cw),0.0);
+            else pa[i][j]=make_cuDoubleComplex(0.0,2*cuCimag(cw));
+            cw=make_cuDoubleComplex(0.0,0.0);
             for(int k=0;k<2;k++){
-                cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i][k],cuConj(fCF[j][k]) ),(my_float)2.0) );
+                cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i][k],cuConj(fCF[j][k]) ),(double)2.0) );
                 //   //cout<<"cwfu="<<cw<<endl;
 
             }
-            if(i<=j) fu[i][j]=make_complex(cuCreal(cw),0.0);
-            if(i>j) fu[i][j]=make_complex(0.0,-cuCimag(cw));
+            if(i<=j) fu[i][j]=make_cuDoubleComplex(cuCreal(cw),0.0);
+            if(i>j) fu[i][j]=make_cuDoubleComplex(0.0,-cuCimag(cw));
             //      //cout<<"pa[i][j]="<<pa[i][j]<<endl;
             //      //cout<<"fu[i][j]="<<fu[i][j]<<endl;
-            my_float temp = cuCreal( cuCmul(pa[i][j],fu[i][j]) );//i have a big change here 
-            my_float y = temp - carry;
-            my_float t = value + y;
+            double temp = cuCreal( cuCmul(pa[i][j],fu[i][j]) );//i have a big change here 
+            double y = temp - carry;
+            double t = value + y;
             carry = (t - value) - y;
 
             value = t; // Kahan Summation
@@ -347,46 +347,46 @@ using namespace std;
     }
 
     for(int i=0;i<const_nAmps;i++){
-        TComplex cw=cuCmul(fCP[i],cuConj(fCP[i]));
-        my_float pa=cuCreal(cw);
+        double2 cw=cuCmul(fCP[i],cuConj(fCP[i]));
+        double pa=cuCreal(cw);
 
-        cw=make_complex(0.0,0.0);
+        cw=make_cuDoubleComplex(0.0,0.0);
         for(int k=0;k<2;k++){
-            //cw+=fCF[i][k]*cuConj(fCF[i][k])/(my_float)2.0;
-            cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i][k],cuConj(fCF[i][k]) ),(my_float)2.0) );
+            //cw+=fCF[i][k]*cuConj(fCF[i][k])/(double)2.0;
+            cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i][k],cuConj(fCF[i][k]) ),(double)2.0) );
         }
-        my_float fu=cuCreal(cw);
+        double fu=cuCreal(cw);
         d_mlk[idp*const_nAmps+i] = pa * fu;
     }
     return (value <= 0) ? 1e-20 : value;
 }
 
-__global__ void kernel_store_fx(const my_float * float_pp,const int *parameter,const double *d_paraList,my_float * d_fx,my_float *d_mlk,int numElements,int begin)
+__global__ void kernel_store_fx(const double * float_pp,const int *parameter,const double *d_paraList,double * d_fx,double *d_mlk,int numElements,int begin)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     if(i<numElements && i>= begin)
     {
-        int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(my_float);
+        int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(double);
         cu_PWA_PARAS *pp = (cu_PWA_PARAS*)&float_pp[i*pwa_paras_size];
         d_fx[i]=calEva(pp,parameter,d_paraList,d_mlk,i);
     }
     //if(i==1)
     //{
-    //    printf("pp[0]:%f pp[end]:%f parameter[0]:%d parameter[17]:%d paraList[0]:%f \n",float_pp[0],float_pp[numElements*sizeof(cu_PWA_PARAS)/sizeof(my_float)],parameter[0],parameter[17],d_paraList[0]);
+    //    printf("pp[0]:%f pp[end]:%f parameter[0]:%d parameter[17]:%d paraList[0]:%f \n",float_pp[0],float_pp[numElements*sizeof(cu_PWA_PARAS)/sizeof(double)],parameter[0],parameter[17],d_paraList[0]);
     //}
 }
 
-int host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int para_size, my_float *h_fx,my_float * h_mlk,int begin,int numElements)
+int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int begin,int numElements)
 {
-    int array_size = sizeof(cu_PWA_PARAS) / sizeof(my_float) * numElements;
-    int mem_size = array_size * sizeof(my_float);
+    int array_size = sizeof(cu_PWA_PARAS) / sizeof(double) * numElements;
+    int mem_size = array_size * sizeof(double);
     //std::cout << __LINE__ << endl;
-    my_float *d_float_pp;
+    double *d_float_pp;
     CUDA_CALL(cudaMalloc((void **)&d_float_pp, mem_size));
     CUDA_CALL(cudaMemcpy(d_float_pp , h_float_pp, mem_size, cudaMemcpyHostToDevice));
      //std::cout << __LINE__ << endl;
-    my_float *d_fx;
-    CUDA_CALL(cudaMalloc((void **)&(d_fx),numElements * sizeof(my_float)));
+    double *d_fx;
+    CUDA_CALL(cudaMalloc((void **)&(d_fx),numElements * sizeof(double)));
      //std::cout << __LINE__ << endl;
     int *d_parameter;
     CUDA_CALL(cudaMalloc((void **)&(d_parameter),18 * sizeof(int)));
@@ -400,8 +400,8 @@ int host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int p
      //std::cout << __LINE__ << endl;
 
     //init mlk
-    my_float *d_mlk;
-    CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(my_float) ));
+    double *d_mlk;
+    CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double) ));
 
     int threadsPerBlock = 256;
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
@@ -409,8 +409,8 @@ int host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int p
     kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_paraList,d_fx,d_mlk, numElements,begin);
      //std::cout << __LINE__ << endl;
     h_fx[0]=0;
-    CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(my_float), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_mlk , d_mlk, (h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(my_float), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_mlk , d_mlk, (h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double), cudaMemcpyDeviceToHost));
 
 
     //free memory
