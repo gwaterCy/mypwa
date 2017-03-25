@@ -1,7 +1,6 @@
 #include <cuda_runtime.h>
 #include "cuComplex.h"
 #include <iostream>
-#include "calEva.h"
 #include "cu_PWA_PARAS.h"
 #include <vector>
 #include <fstream>
@@ -421,13 +420,13 @@ int host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int p
     cudaFree(d_paraList);
     cudaFree(d_mlk);
 
-    ofstream cout("data_fx_cal");
+    //ofstream cout("data_fx_cal");
     //std::cout << __LINE__ << endl;
-    for(int i=begin;i<numElements;i++)
-    {
-        cout << h_fx[i] << endl;
-    }
-    cout.close();
+    //for(int i=begin;i<numElements;i++)
+    //{
+        //cout << h_fx[i] << endl;
+    //}
+    //cout.close();
     return 0;
 }
 

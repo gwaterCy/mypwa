@@ -1,5 +1,5 @@
-#ifndef PWA_PARAS_H
-#define PWA_PARAS_H
+#ifndef CU_PWA_PARAS_H
+#define CU_PWA_PARAS_H
 //定义数据结构PWA_PARAS，其中包括所有需要用于计算分波振幅，但在拟合过程中不需要改变的参数
 
 #include "conf.h"

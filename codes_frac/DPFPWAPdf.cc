@@ -22,7 +22,7 @@
 #include <fstream>
 #include "phikk_structure.h"
 #include "phipipi_structure.h"
-#include "kernel_calEva,h"
+#include "kernel_calEva.h"
 #include <sstream>
 #include <iomanip>
 #include "conf.h"
@@ -461,7 +461,7 @@ Double_t DPFPWAPdf::evaluate() const
 //    return - sum;
 //    //return exp(- sum / analyticalIntegral(1, ""));
 }
-void DPFPWAPdf::cu_inti_data(my_float &* h_float_pp,int &* h_parameter,double &* h_paraList,my_float *h_fx,my_float &* h_mlk,int iEnd)
+void DPFPWAPdf::cu_inti_data(my_float * &h_float_pp,int * &h_parameter,double * &h_paraList,my_float *&h_fx,my_float * &h_mlk,int iEnd)
 {
     int array_num = sizeof(cu_PWA_PARAS) / sizeof(my_float);
     int array_size = array_num * iEnd;
@@ -526,7 +526,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     //    fx[i] = sum;
     //}
     my_float *h_float_pp;
-    ini *h_parameter;
+    int *h_parameter;
     double *h_paraList;
     my_float *h_fx;
     my_float *h_mlk;

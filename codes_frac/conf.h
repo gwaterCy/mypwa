@@ -7,7 +7,7 @@
 
 #ifndef _CONF_H
 #define _CONF_H
-#include <cuComplex.h>
+//#include <cuComplex.h>
 #define my_float double
 #define TComplex double2
 #define make_complex make_cuDoubleComplex
