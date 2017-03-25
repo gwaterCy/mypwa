@@ -2,7 +2,7 @@
 #include "cuComplex.h"
 #include <iostream>
 #include "calEva.h"
-#include "PWA_PARAS.h"
+#include "cu_PWA_PARAS.h"
 #include <vector>
 #include <fstream>
 #include <math.h>
@@ -14,45 +14,10 @@ using namespace std;
 
 #define CUDA_CALL(x) {const cudaError_t a=(x); if(a != cudaSuccess) {printf("\nCUDAError:%s(err_num=%d)\n",cudaGetErrorString(a),a); cudaDeviceReset(); }}
 
-    int _CN_spinList;
-    int _CN_massList;
-    int _CN_mass2List;
-    int _CN_widthList;
-    int _CN_g1List;
-    int _CN_g2List;
-    int _CN_b1List;
-    int _CN_b2List;
-    int _CN_b3List;
-    int _CN_b4List;
-    int _CN_b5List;
-    int _CN_rhoList;
-    int _CN_fracList;
-    int _CN_phiList;
-    int _CN_propList;
-    int nAmps;
-    int Nmc,Nmc_data;
-    std::vector<double> paraList;
     my_float **mlk;
 
-__global__ void
-convert(const my_float *A, my_float *BB, int numElements)
-{
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
-    if (i < numElements)
-    {
-        int pwa_paras_size = sizeof(PWA_PARAS) / sizeof(my_float);
-        //my_float *pp = (my_float *)malloc(sizeof(PWA_PARAS));
-        //for(int j = 0; j < pwa_paras_size; j++) {
-           // pp[j] = A[i * pwa_paras_size + j];
-       // }
-        //PWA_PARAS tt = ((PWA_PARAS*)pp)[0];
-        PWA_PARAS *tt = (PWA_PARAS*)&A[i*pwa_paras_size];
-        BB[i] = tt->wu[0] + tt->wu[1] + tt->wu[2] + tt->wu[3];
-    }
-}
 
-
- __device__ my_float calEva(const PWA_PARAS *pp, const int * parameter , const double * d_paraList,int idp) 
+ __device__ my_float calEva(const cu_PWA_PARAS *pp, const int * parameter , const double * d_paraList,my_float *d_mlk,int idp) 
     ////return square of complex amplitude
 {
     //	static int A=0;
@@ -354,9 +319,9 @@ convert(const my_float *A, my_float *BB, int numElements)
 
     }
     my_float carry(0);
-    //#pragma omp parallel for reduction(+:value)
+    //#pragmaint host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int para_size, my_float *h_fx,int numElements,int begin) omp parallel for reduction(+:value)
     for(int i=0;i<const_nAmps;i++){
-        //  //cout<<"haha: "<< __LINE__ << endl;
+        //  //cout<<"haha: "<< __LINE__ << endl;    int mlk_cro_size=sizeof(my_float)*numElements
         for(int j=0;j<const_nAmps;j++){
             cw=cuCmul(fCP[i],cuConj(fCP[j]));
             //    //cout<<"cw="<<cw<<endl;
@@ -392,29 +357,29 @@ convert(const my_float *A, my_float *BB, int numElements)
             cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i][k],cuConj(fCF[i][k]) ),(my_float)2.0) );
         }
         my_float fu=cuCreal(cw);
-       // mlk[idp][i] = pa * fu;
+        d_mlk[idp*const_nAmps+i] = pa * fu;
     }
     return (value <= 0) ? 1e-20 : value;
 }
 
-__global__ void kernel_store_fx(const my_float * float_pp,const int *parameter,const double *d_paraList,my_float * d_fx,int numElements,int begin)
+__global__ void kernel_store_fx(const my_float * float_pp,const int *parameter,const double *d_paraList,my_float * d_fx,my_float *d_mlk,int numElements,int begin)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     if(i<numElements && i>= begin)
     {
-        int pwa_paras_size = sizeof(PWA_PARAS) / sizeof(my_float);
-        PWA_PARAS *pp = (PWA_PARAS*)&float_pp[i*pwa_paras_size];
-        d_fx[i]=calEva(pp,parameter,d_paraList,i);
+        int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(my_float);
+        cu_PWA_PARAS *pp = (cu_PWA_PARAS*)&float_pp[i*pwa_paras_size];
+        d_fx[i]=calEva(pp,parameter,d_paraList,d_mlk,i);
     }
     //if(i==1)
     //{
-    //    printf("pp[0]:%f pp[end]:%f parameter[0]:%d parameter[17]:%d paraList[0]:%f \n",float_pp[0],float_pp[numElements*sizeof(PWA_PARAS)/sizeof(my_float)],parameter[0],parameter[17],d_paraList[0]);
+    //    printf("pp[0]:%f pp[end]:%f parameter[0]:%d parameter[17]:%d paraList[0]:%f \n",float_pp[0],float_pp[numElements*sizeof(cu_PWA_PARAS)/sizeof(my_float)],parameter[0],parameter[17],d_paraList[0]);
     //}
 }
 
-int host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int para_size, my_float *h_fx,int numElements,int begin)
+int host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int para_size, my_float *h_fx,my_float * h_mlk,int begin,int numElements)
 {
-    int array_size = sizeof(PWA_PARAS) / sizeof(my_float) * iEnd;
+    int array_size = sizeof(cu_PWA_PARAS) / sizeof(my_float) * numElements;
     int mem_size = array_size * sizeof(my_float);
     //std::cout << __LINE__ << endl;
     my_float *d_float_pp;
@@ -434,13 +399,28 @@ int host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int p
     CUDA_CALL(cudaMalloc((void **)&(d_paraList),para_size * sizeof(double)));
     CUDA_CALL(cudaMemcpy(d_paraList , h_paraList, para_size * sizeof(double), cudaMemcpyHostToDevice));
      //std::cout << __LINE__ << endl;
+
+    //init mlk
+    my_float *d_mlk;
+    CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(my_float) ));
+
     int threadsPerBlock = 256;
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
     printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
-    kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_paraList,d_fx, numElements,begin);
+    kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_paraList,d_fx,d_mlk, numElements,begin);
      //std::cout << __LINE__ << endl;
     h_fx[0]=0;
     CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(my_float), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_mlk , d_mlk, (h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(my_float), cudaMemcpyDeviceToHost));
+
+
+    //free memory
+    cudaFree(d_float_pp);
+    cudaFree(d_fx);
+    cudaFree(d_parameter);
+    cudaFree(d_paraList);
+    cudaFree(d_mlk);
+
     ofstream cout("data_fx_cal");
     //std::cout << __LINE__ << endl;
     for(int i=begin;i<numElements;i++)
@@ -451,124 +431,3 @@ int host_store_fx(my_float *h_float_pp,int *h_parameter,double *h_paraList,int p
     return 0;
 }
 
-void func(DataPointers& cpu_data_pointers)
-{
-    my_float * h_float_pp=cpu_data_pointers.pointer_data;
-
-    int * h_parameter=(int *)malloc(18*sizeof(int));
-    h_parameter[0] =  _CN_spinList;
-    h_parameter[1] =  _CN_massList;
-    h_parameter[2] =  _CN_mass2List;
-    h_parameter[3] =  _CN_widthList;
-    h_parameter[4] =  _CN_g1List;
-    h_parameter[5] =  _CN_g2List;
-    h_parameter[6] =  _CN_b1List;
-    h_parameter[7] =  _CN_b2List;
-    h_parameter[8] =  _CN_b3List;
-    h_parameter[9] =  _CN_b4List;
-    h_parameter[10] =  _CN_b5List;
-    h_parameter[11] =  _CN_rhoList;
-    h_parameter[12] =  _CN_fracList;
-    h_parameter[13] =  _CN_phiList;
-    h_parameter[14] =  _CN_propList;
-    h_parameter[15] =  nAmps;
-    h_parameter[16] =  Nmc;
-    h_parameter[17] = Nmc_data; 
-
-    double * h_paraList=(double *)malloc(paraList.size()*sizeof(double));
-    for(int i=0;i<paraList.size();i++)
-    {
-        h_paraList[i]=paraList[i];
-    }
-    
-    my_float *h_fx=(my_float *)malloc(iEnd*sizeof(my_float));
-
-    host_store_fx(h_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,iEnd,iBegin);
-}
-//将文件中的数据pwa_paras读出来，存在数组中，内存中的存储是一定的。但是结构题的指针可以随意转化
-int initialize_data(std::vector<PWA_PARAS> &pwa_paras, DataPointers& cpu_data_points)
-{
-    mlk = new my_float*[Nmc + Nmc_data];
-    for(int i = 0; i < Nmc + Nmc_data; i++) {
-        mlk[i] = new my_float[nAmps];
-    }
-    //init mlk
-    //init private num
-    std::fstream cin("data_of_private_member");
-         cin >> _CN_spinList ;
-        cin >>  _CN_massList ;
-        cin >>  _CN_mass2List ;
-        cin >>  _CN_widthList ;
-        cin >>  _CN_g1List ;
-        cin >>  _CN_g2List ;
-        cin >>  _CN_b1List ;
-        cin >>  _CN_b2List ;
-        cin >>  _CN_b3List ;
-        cin >>  _CN_b4List ;
-        cin >>  _CN_b5List ;
-        cin >>  _CN_rhoList ;
-        cin >>  _CN_fracList ;
-        cin >>  _CN_phiList ;
-        cin >>  _CN_propList ;
-        cin >>  nAmps ;
-        cin >>  Nmc ;
-        cin >> Nmc_data ;
-        int paraList_size;
-        cin >> paraList_size;
-        paraList.resize(paraList_size);
-        for(int i=0;i<paraList_size;i++)
-        {
-            cin >> paraList[i] ;
-        }
-        cin.close();
-    ///////////////////////////////
-    pwa_paras.resize(iEnd);
-    int array_size = sizeof(PWA_PARAS) / sizeof(my_float) * iEnd;
-    int mem_size = array_size * sizeof(my_float);
-    std::cout << "array_size=" << array_size << std::endl;
-
-    cpu_data_points.pointer_data = (my_float *)malloc(mem_size);
-    cpu_data_points.pointer_data_pwa_paras_type = (PWA_PARAS*)cpu_data_points.pointer_data;
-
-    cpu_data_points.result_data = (my_float*)malloc(array_size);
-    std::cout << "finish cpu memory malloc" << std::endl;
-    std::ifstream in("data_pwa_paras");
-    my_float temp_num;
-    for(int i = 0; i < array_size; i++) {
-        in >> temp_num;
-        cpu_data_points.pointer_data[i] = temp_num;
-    }
-    in.close();
-std::cout << "haha" << __LINE__ << std::endl;
-    for(int i = 0; i < iEnd; i++) {
-        pwa_paras[i] = cpu_data_points.pointer_data_pwa_paras_type[i];
-    }
-    return 0;
-}
-
-int data_distribution(DataPointers& cpu_data_pointers, CudaDataPointers& cuda_data_pointers)
-{
-    int array_size = sizeof(PWA_PARAS) / sizeof(my_float) * iEnd;
-    int mem_size = array_size * sizeof(my_float);
-    CUDA_CALL(cudaMalloc((void **)&(cuda_data_pointers.input_data), mem_size));
-    CUDA_CALL(cudaMalloc((void **)&(cuda_data_pointers.output_data), iEnd * sizeof(my_float)));
-    CUDA_CALL(cudaMemcpy(cuda_data_pointers.input_data, cpu_data_pointers.pointer_data, mem_size, cudaMemcpyHostToDevice));
-
-    int threadsPerBlock = 256;
-    int blocksPerGrid =(iEnd + threadsPerBlock - 1) / threadsPerBlock;
-    printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
-    convert<<<blocksPerGrid, threadsPerBlock>>>(cuda_data_pointers.input_data, cuda_data_pointers.output_data, iEnd);
-    
-    CUDA_CALL(cudaMemcpy(cpu_data_pointers.result_data, cuda_data_pointers.output_data, sizeof(my_float) * iEnd, cudaMemcpyDeviceToHost));
-
-    std::vector<my_float> aa(iEnd);
-    for(int i = 0; i < iEnd; i++) {
-        aa[i] = cpu_data_pointers.pointer_data_pwa_paras_type[i].wu[0] + cpu_data_pointers.pointer_data_pwa_paras_type[i].wu[1] + cpu_data_pointers.pointer_data_pwa_paras_type[i].wu[2] + cpu_data_pointers.pointer_data_pwa_paras_type[i].wu[3];
-    }
-    for(int i = 0; i < iEnd; i++)
-    {
-        if(cpu_data_pointers.result_data[i]-aa[i] != 0.0) {std::cout << "test failed!!!!!!! the result is not same!!"<< std::endl; return 0;}
-    }
-    std::cout << "test finish !!!! the result is same!" << std::endl;
-    return 0;
-}
