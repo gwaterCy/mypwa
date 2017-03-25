@@ -7,13 +7,13 @@
 #include <math.h>
 #include "cu_DPFPropogator.h"
 #include "kernel_calEva.h"
-
+#include <assert.h>
 
 using namespace std;
 
-#define CUDA_CALL(x) {const cudaError_t a=(x); if(a != cudaSuccess) {printf("\nCUDAError:%s(err_num=%d)\n",cudaGetErrorString(a),a); cudaDeviceReset(); }}
+#define CUDA_CALL(x) {const cudaError_t a=(x); if(a != cudaSuccess) {printf("\nerror in line:%d CUDAError:%s(err_num=%d)\n",__LINE__,cudaGetErrorString(a),a); cudaDeviceReset(); assert(0); }}
 
-    double **mlk;
+    
 
 
  __device__ double calEva(const cu_PWA_PARAS *pp, const int * parameter , const double * d_paraList,double *d_mlk,int idp) 
@@ -369,14 +369,16 @@ __global__ void kernel_store_fx(const double * float_pp,const int *parameter,con
         int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(double);
         cu_PWA_PARAS *pp = (cu_PWA_PARAS*)&float_pp[i*pwa_paras_size];
         d_fx[i]=calEva(pp,parameter,d_paraList,d_mlk,i);
+        //fx[i]=calEva(pp,parameter,d_paraList,i);
     }
+    return ;
     //if(i==1)
     //{
     //    printf("pp[0]:%f pp[end]:%f parameter[0]:%d parameter[17]:%d paraList[0]:%f \n",float_pp[0],float_pp[numElements*sizeof(cu_PWA_PARAS)/sizeof(double)],parameter[0],parameter[17],d_paraList[0]);
     //}
 }
 
-int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int begin,int numElements)
+int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int numElements,int begin)
 {
     int array_size = sizeof(cu_PWA_PARAS) / sizeof(double) * numElements;
     int mem_size = array_size * sizeof(double);
@@ -384,41 +386,44 @@ int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int par
     double *d_float_pp;
     CUDA_CALL(cudaMalloc((void **)&d_float_pp, mem_size));
     CUDA_CALL(cudaMemcpy(d_float_pp , h_float_pp, mem_size, cudaMemcpyHostToDevice));
-     //std::cout << __LINE__ << endl;
+    cout << "d_float_pp[1]" <<h_float_pp[1] << endl;
+    //std::cout << __LINE__ << endl;
     double *d_fx;
     CUDA_CALL(cudaMalloc((void **)&(d_fx),numElements * sizeof(double)));
-     //std::cout << __LINE__ << endl;
+    //std::cout << __LINE__ << endl;
     int *d_parameter;
     CUDA_CALL(cudaMalloc((void **)&(d_parameter),18 * sizeof(int)));
     CUDA_CALL(cudaMemcpy(d_parameter , h_parameter, 18*sizeof(int), cudaMemcpyHostToDevice));
-     //std::cout << __LINE__ << endl;
+    cout << "d_parameter" <<h_parameter[15] << endl;
+    //std::cout << __LINE__ << endl;
     //std::cout << "d_paralist[0]: "<< h_paraList[0] << std::endl;
     //std::cout << "paralist[0]: "<< paraList[0] << std::endl;
     double *d_paraList;
     CUDA_CALL(cudaMalloc((void **)&(d_paraList),para_size * sizeof(double)));
     CUDA_CALL(cudaMemcpy(d_paraList , h_paraList, para_size * sizeof(double), cudaMemcpyHostToDevice));
-     //std::cout << __LINE__ << endl;
+    cout << "d_paraList" <<h_paraList[1] << endl;
+    //std::cout << __LINE__ << endl;
 
     //init mlk
-    double *d_mlk;
+    double *d_mlk=NULL;
     CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double) ));
-
-    int threadsPerBlock = 256;
+    cout << "nAmps="<< h_parameter[15] << "iEnd=" << (h_parameter[16]+h_parameter[17]) << endl;
+    int threadsPerBlock = 64;
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
     printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
     kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_paraList,d_fx,d_mlk, numElements,begin);
      //std::cout << __LINE__ << endl;
-    h_fx[0]=0;
+    CUDA_CALL(cudaGetLastError());
     CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(double), cudaMemcpyDeviceToHost));
     CUDA_CALL(cudaMemcpy(h_mlk , d_mlk, (h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double), cudaMemcpyDeviceToHost));
-
+    //CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(double), cudaMemcpyDeviceToHost));
 
     //free memory
-    cudaFree(d_float_pp);
-    cudaFree(d_fx);
-    cudaFree(d_parameter);
-    cudaFree(d_paraList);
-    cudaFree(d_mlk);
+    CUDA_CALL(cudaFree(d_float_pp));
+    CUDA_CALL(cudaFree(d_fx));
+    CUDA_CALL(cudaFree(d_parameter));
+    CUDA_CALL(cudaFree(d_paraList));
+    CUDA_CALL(cudaFree(d_mlk));
 
     //ofstream cout("data_fx_cal");
     //std::cout << __LINE__ << endl;

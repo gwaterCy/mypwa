@@ -461,14 +461,14 @@ Double_t DPFPWAPdf::evaluate() const
 //    return - sum;
 //    //return exp(- sum / analyticalIntegral(1, ""));
 }
-void DPFPWAPdf::cu_init_data(double * &h_float_pp,int * &h_parameter,double * &h_paraList,double *&h_fx,double * &h_mlk,int iEnd) const
+void DPFPWAPdf::cu_init_data(double * &h_float_pp,int * &h_parameter,double * &h_paraList,double *&h_fx,double * &h_mlk,int i_End) const
 {
     int array_num = sizeof(cu_PWA_PARAS) / sizeof(double);
-    int array_size = array_num * iEnd;
+    int array_size = array_num * i_End;
     int mem_size = array_size * sizeof(double);
     //init h_float_pp
     h_float_pp = (double *)malloc(mem_size);
-    for(int i=0;i<iEnd;i++)
+    for(int i=0;i<i_End;i++)
     {
         Double_t * k=(Double_t*)&pwa_paras[i];
         for(int j=0;j<array_num;j++)
@@ -502,7 +502,8 @@ void DPFPWAPdf::cu_init_data(double * &h_float_pp,int * &h_parameter,double * &h
         h_paraList[i]=paraList[i];
     }
     //init h_fx
-    h_fx=(double *)malloc(iEnd*sizeof(double));
+    //h_fx=(double *)malloc(i_End*sizeof(double));
+    h_fx=new double[i_End];
     //init h_mlk
     h_mlk = new double[(Nmc + Nmc_data)*nAmps];
     //init h_paraList
@@ -514,7 +515,8 @@ void DPFPWAPdf::cu_init_data(double * &h_float_pp,int * &h_parameter,double * &h
 }
 void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     paras_getval();
-//#pragma omp parallel for
+
+    //#pragma omp parallel for
     //for(int i = 0; i < Nmc + Nmc_data; i++) {
     //for(int i = iBegin; i < iEnd; i++) {
     //    double sum = calEva(pwa_paras[i], i);
@@ -526,7 +528,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     double *h_paraList;
     double *h_fx;
     double *h_mlk;
-
+    cout << __LINE__ << "iBegin::" << iBegin << endl;
     cu_init_data(h_float_pp,h_parameter,h_paraList,h_fx,h_mlk,iEnd);
     host_store_fx(h_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
    
