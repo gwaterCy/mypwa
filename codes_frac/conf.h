@@ -11,6 +11,4 @@
 #define my_float double
 #define TComplex double2
 #define make_complex make_cuDoubleComplex
-#define iBegin 0
-#define iEnd 6865
 #endif

@@ -12,7 +12,7 @@ typedef struct {
     my_float w1p12_1[4],w1p13_1[4],w1p12_2[4],w1p13_2[4];
     my_float w1p12_3[2],w1p13_3[2],w1p12_4[2],w1p13_4[2];
     my_float w1m12[2],w1m13[2];
-} PWA_PARAS;
+} cu_PWA_PARAS;
 
 #endif
 
