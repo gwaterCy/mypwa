@@ -528,7 +528,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     double *h_paraList;
     double *h_fx;
     double *h_mlk;
-    cout << __LINE__ << "iBegin::" << iBegin << endl;
+    cout << __LINE__ << "\niEnd : " << iEnd << endl;
     cu_init_data(h_float_pp,h_parameter,h_paraList,h_fx,h_mlk,iEnd);
     host_store_fx(h_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
    
