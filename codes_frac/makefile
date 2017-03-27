@@ -17,7 +17,7 @@ $(EXEC):$(OBJS)
 	g++ -o $@ $^ `root-config --libs` -L`root-config --libdir` -lRooFit -D ROO_COMPLEX -fopenmp  -lgomp -lpthread -lRooFitCore -lcudart -L/usr/local/cuda/lib64
 
 gpuCode.o:kernel_calEva.o cu_DPFPropogator.o
-	nvcc -arch=sm_20 -dlink $^ -o gpuCode.o
+	nvcc $^ -o gpuCode.o -arch=sm_20 -dlink
 
 pwa.o:pwa.C
 	g++ -c $< $(INCLUDES) -D PWAINI="$(CURRDIR)/pwa_ini.C"

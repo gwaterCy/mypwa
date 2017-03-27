@@ -176,7 +176,19 @@ DPFPWAPdf::DPFPWAPdf(const DPFPWAPdf& other, const char* name) :
 //        mcp5_data[i][0]=other.mcp5_data[i][0];mcp5_data[i][1]=other.mcp5_data[i][1];mcp5_data[i][2]=other.mcp5_data[i][2];mcp5_data[i][3]=other.mcp5_data[i][3];
 //    }
     //cout << "Begin === Reset!" << endl;
-
+    int i_End= Nmc + Nmc_data;
+    int array_num = sizeof(cu_PWA_PARAS) / sizeof(double);
+    int array_size = array_num * i_End;
+    //init h_float_pp
+    h_float_pp = new double[array_size];
+    for(int i=0;i<i_End;i++)
+    {
+        Double_t * k=(Double_t*)&other.pwa_paras[i];
+        for(int j=0;j<array_num;j++)
+            h_float_pp[i*array_num+j]=(double)k[j];
+    }
+    
+    //
     pwa_paras.resize(0);
     fx.resize(0);
     //ofstream cout("data_pwa_paras");
@@ -461,19 +473,20 @@ Double_t DPFPWAPdf::evaluate() const
 //    return - sum;
 //    //return exp(- sum / analyticalIntegral(1, ""));
 }
-void DPFPWAPdf::cu_init_data(double * &h_float_pp,int * &h_parameter,double * &h_paraList,double *&h_fx,double * &h_mlk,int i_End) const
+void DPFPWAPdf::cu_init_data(int * &h_parameter,double * &h_paraList,double *&h_fx,double * &h_mlk,int i_End) const
 {
-    int array_num = sizeof(cu_PWA_PARAS) / sizeof(double);
-    int array_size = array_num * i_End;
-    int mem_size = array_size * sizeof(double);
-    //init h_float_pp
-    h_float_pp = (double *)malloc(mem_size);
-    for(int i=0;i<i_End;i++)
-    {
-        Double_t * k=(Double_t*)&pwa_paras[i];
-        for(int j=0;j<array_num;j++)
-            h_float_pp[i*array_num+j]=(double)k[j];
-    }
+    //int array_num = sizeof(cu_PWA_PARAS) / sizeof(double);
+    //int array_size = array_num * i_End;
+    //int mem_size = array_size * sizeof(double);
+    ////init h_float_pp
+    //h_float_pp = (double *)malloc(mem_size);
+    //for(int i=0;i<i_End;i++)
+    //{
+    //    Double_t * k=(Double_t*)&pwa_paras[i];
+    //    for(int j=0;j<array_num;j++)
+    ///        h_float_pp[i*array_num+j]=(double)k[j];
+    //}
+    cout << h_float_pp << endl;
     //init h_parameter
     h_parameter=(int *)malloc(18*sizeof(int));
 
@@ -517,24 +530,24 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     paras_getval();
 //#pragma omp parallel 
     //for(int i = 0; i < Nmc + Nmc_data; i++) {
-    //for(int i = iBegin; i < iEnd; i++) {
-   //     double sum = calEva(pwa_paras[i], i);
-    //    fx[i] = (sum <= 0) ? 1e-20 : sum;
-    //    fx[i] = sum;
-    //}
-    double *h_float_pp;
+    for(int i = iBegin; i < iEnd; i++) {
+        double sum = calEva(pwa_paras[i], i);
+        fx[i] = (sum <= 0) ? 1e-20 : sum;
+        fx[i] = sum;
+    }
+    //double *h_float_pp;
     int *h_parameter;
     double *h_paraList;
     double *h_fx;
     double *h_mlk;
     //cout << "\niEnd : " << iEnd << endl;
-    cu_init_data(h_float_pp,h_parameter,h_paraList,h_fx,h_mlk,iEnd);
+    cu_init_data(h_parameter,h_paraList,h_fx,h_mlk,iEnd);
     host_store_fx(h_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
    
     for(int i = 0; i < Nmc + Nmc_data; i++) {
         for(int j=0;j<nAmps;j++)
         {
-            mlk[i][j]=h_mlk[i*nAmps+j];
+            if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.00001) assert(0);
         }
     }
     
@@ -542,11 +555,11 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     {
         //double k=abs(fx[i]-h_fx[i]);
         //if(k>=1) assert(0);
-        fx[i]=h_fx[i];
+        if(abs(fx[i]-h_fx[i])>0.00001) assert(0);
     }
 
     //free memory
-    free(h_float_pp);
+    //free(h_float_pp);
     free(h_parameter);
     free(h_paraList);
     free(h_fx);
@@ -1156,6 +1169,18 @@ void DPFPWAPdf::store_pwa_paras() {
         pwa_paras.push_back(the_pwa_paras);
         //fx.push_back(0);
         ////cout << "PWA_PARAS has " << the_pwa_paras.sv << endl;
+    }
+    int i_End= Nmc + Nmc_data;
+    int array_num = sizeof(cu_PWA_PARAS) / sizeof(double);
+    int array_size = array_num * i_End;
+    int mem_size = array_size * sizeof(double);
+    //init h_float_pp
+    h_float_pp = new double[array_size];
+    for(int i=0;i<i_End;i++)
+    {
+        Double_t * k=(Double_t*)&pwa_paras[i];
+        for(int j=0;j<array_num;j++)
+            h_float_pp[i*array_num+j]=(double)k[j];
     }
 //    store_fx();
 //    //cout << "store_fx fx[0] = " << fx[0] << endl;

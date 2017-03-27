@@ -396,10 +396,13 @@ int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int par
     int array_size = sizeof(cu_PWA_PARAS) / sizeof(double) * numElements;
     int mem_size = array_size * sizeof(double);
     //std::cout << __LINE__ << endl;
-    double *d_float_pp;
-    CUDA_CALL(cudaMalloc((void **)&d_float_pp, mem_size));
-    CUDA_CALL(cudaMemcpy(d_float_pp , h_float_pp, mem_size, cudaMemcpyHostToDevice));
-    //cout << "\nd_float_pp[end]" <<h_float_pp[array_size-1] << endl;
+    //double *d_float_pp=NULL;
+    if(d_float_pp==NULL)
+    {
+        CUDA_CALL(cudaMalloc((void **)&d_float_pp, mem_size));
+        CUDA_CALL(cudaMemcpy(d_float_pp , h_float_pp, mem_size, cudaMemcpyHostToDevice));
+    }
+        //cout << "\nd_float_pp[end]" <<h_float_pp[array_size-1] << endl;
     //std::cout << __LINE__ << endl;
     double *d_fx;
     CUDA_CALL(cudaMalloc((void **)&(d_fx),numElements * sizeof(double)));
@@ -432,7 +435,7 @@ int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int par
     //CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(double), cudaMemcpyDeviceToHost));
 
     //free memory
-    CUDA_CALL(cudaFree(d_float_pp));
+    //CUDA_CALL(cudaFree(d_float_pp));
     CUDA_CALL(cudaFree(d_fx));
     CUDA_CALL(cudaFree(d_parameter));
     CUDA_CALL(cudaFree(d_paraList));
