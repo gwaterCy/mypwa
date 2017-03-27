@@ -358,6 +358,18 @@ using namespace std;
         double fu=cuCreal(cw);
         d_mlk[idp*const_nAmps+i] = pa * fu;
     }
+    free(fCP);
+    for(int i=0;i<const_nAmps;i++)
+    {
+        free(pa[i]);
+        free(fu[i]);
+        //free(fCF[i]);
+    } 
+    free(fCF);
+    free(pa);
+    free(fu);
+    free(crp1);
+    free(crp11);
     return (value <= 0) ? 1e-20 : value;
 }
 
@@ -369,14 +381,14 @@ __global__ void kernel_store_fx(const double * float_pp,const int *parameter,con
         int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(double);
         cu_PWA_PARAS *pp = (cu_PWA_PARAS*)&float_pp[i*pwa_paras_size];
         d_fx[i]=calEva(pp,parameter,d_paraList,d_mlk,i);
-        printf("\nfx[%d]:%f\n",i,d_fx[i]);
+        //printf("\nfx[%d]:%f\n",i,d_fx[i]);
         //fx[i]=calEva(pp,parameter,d_paraList,i);
     }
     
-    if(i==1)
-    {
-        printf("pp[0]:%f pp[end]:%f parameter[0]:%d parameter[16]:%d paraList[0]:%f \n",float_pp[0],float_pp[numElements*sizeof(cu_PWA_PARAS)/sizeof(double)-1],parameter[0],parameter[16],d_paraList[0]);
-    }
+    //if(i==1)
+    //{
+        //printf("pp[0]:%f pp[end]:%f parameter[0]:%d parameter[16]:%d paraList[0]:%f \n",float_pp[0],float_pp[numElements*sizeof(cu_PWA_PARAS)/sizeof(double)-1],parameter[0],parameter[16],d_paraList[0]);
+    //}
 }
 
 int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int numElements,int begin)
@@ -387,7 +399,7 @@ int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int par
     double *d_float_pp;
     CUDA_CALL(cudaMalloc((void **)&d_float_pp, mem_size));
     CUDA_CALL(cudaMemcpy(d_float_pp , h_float_pp, mem_size, cudaMemcpyHostToDevice));
-    cout << "\nd_float_pp[end]" <<h_float_pp[array_size-1] << endl;
+    //cout << "\nd_float_pp[end]" <<h_float_pp[array_size-1] << endl;
     //std::cout << __LINE__ << endl;
     double *d_fx;
     CUDA_CALL(cudaMalloc((void **)&(d_fx),numElements * sizeof(double)));
@@ -395,23 +407,23 @@ int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int par
     int *d_parameter;
     CUDA_CALL(cudaMalloc((void **)&(d_parameter),18 * sizeof(int)));
     CUDA_CALL(cudaMemcpy(d_parameter , h_parameter, 18*sizeof(int), cudaMemcpyHostToDevice));
-    cout << "\nd_parameter[16]" <<h_parameter[16] << endl;
+    //cout << "\nd_parameter[16]" <<h_parameter[16] << endl;
     //std::cout << __LINE__ << endl;
     //std::cout << "d_paralist[0]: "<< h_paraList[0] << std::endl;
     //std::cout << "paralist[0]: "<< paraList[0] << std::endl;
     double *d_paraList;
     CUDA_CALL(cudaMalloc((void **)&(d_paraList),para_size * sizeof(double)));
     CUDA_CALL(cudaMemcpy(d_paraList , h_paraList, para_size * sizeof(double), cudaMemcpyHostToDevice));
-    cout << "\nd_paraList : " <<h_paraList[0] << endl;
+    //cout << "\nd_paraList : " <<h_paraList[0] << endl;
     //std::cout << __LINE__ << endl;
 
     //init mlk
     double *d_mlk=NULL;
     CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double) ));
     //ut << "nAmps="<< h_parameter[15] << "iEnd=" << (h_parameter[16]+h_parameter[17]) << endl;
-    int threadsPerBlock = 1;
+    int threadsPerBlock = 256;
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
-    printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
+    //printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
     kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_paraList,d_fx,d_mlk, numElements,begin);
      //std::cout << __LINE__ << endl;
     CUDA_CALL(cudaGetLastError());

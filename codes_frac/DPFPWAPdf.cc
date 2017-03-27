@@ -26,7 +26,7 @@
 #include <sstream>
 #include <iomanip>
 #include "cu_PWA_PARAS.h"
-
+#include "assert.h"
 /*#include "RooAbsReal.h"
 #include "RooListProxy.h"
 #include "RooStringVar.h"
@@ -515,12 +515,11 @@ void DPFPWAPdf::cu_init_data(double * &h_float_pp,int * &h_parameter,double * &h
 }
 void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     paras_getval();
-
-    //#pragma omp parallel for
+//#pragma omp parallel 
     //for(int i = 0; i < Nmc + Nmc_data; i++) {
     //for(int i = iBegin; i < iEnd; i++) {
-    //    double sum = calEva(pwa_paras[i], i);
-        //fx[i] = (sum <= 0) ? 1e-20 : sum;
+   //     double sum = calEva(pwa_paras[i], i);
+    //    fx[i] = (sum <= 0) ? 1e-20 : sum;
     //    fx[i] = sum;
     //}
     double *h_float_pp;
@@ -528,7 +527,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     double *h_paraList;
     double *h_fx;
     double *h_mlk;
-    cout << __LINE__ << "\niEnd : " << iEnd << endl;
+    //cout << "\niEnd : " << iEnd << endl;
     cu_init_data(h_float_pp,h_parameter,h_paraList,h_fx,h_mlk,iEnd);
     host_store_fx(h_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
    
@@ -541,6 +540,8 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     
     for(int i=iBegin;i<iEnd;i++)
     {
+        //double k=abs(fx[i]-h_fx[i]);
+        //if(k>=1) assert(0);
         fx[i]=h_fx[i];
     }
 
@@ -553,7 +554,8 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
 
     Double_t sum = 0;
     Double_t carry = 0;
-#pragma omp parallel for private(carry) reduction(+:sum)
+
+//#pragma omp parallel for private(carry) reduction(+:sum)
     for(int i = 0; i < Nmc; i++)
     {
         //  //cout<<"haha: "<< __LINE__ << endl;
@@ -568,7 +570,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     for(int i = 0; i < nAmps; i++)
     {
         double tt = 0;
-#pragma omp parallel for reduction(+:tt)
+//#pragma omp parallel for reduction(+:tt)
         for(int j = 0; j < Nmc; j++)
         {
             tt += mlk[j][i];
@@ -581,7 +583,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     for(int i = 0; i < nAmps; i++)
     {
         double tt = 0;
-#pragma omp parallel for reduction(+:tt)
+//#pragma omp parallel for reduction(+:tt)
         for(int j = Nmc; j < Nmc + Nmc_data; j++)
         {
             tt += mlk[j][i];
@@ -1091,31 +1093,31 @@ Int_t DPFPWAPdf::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, 
     //cout<<"getAnalyticalIntegral haha: "<< __LINE__ << endl;
     RooArgSet theSet1;
     theSet1.add(RooArgSet(idp.arg()));
-         ofstream cout("data_of_priveate_member");
-         cout << _CN_spinList << std::endl;
-        cout <<  _CN_massList << std::endl;
-        cout <<  _CN_mass2List << std::endl;
-        cout <<  _CN_widthList << std::endl;
-        cout <<  _CN_g1List << std::endl;
-        cout <<  _CN_g2List << std::endl;
-        cout <<  _CN_b1List << std::endl;
-        cout <<  _CN_b2List << std::endl;
-        cout <<  _CN_b3List << std::endl;
-        cout <<  _CN_b4List << std::endl;
-        cout <<  _CN_b5List << std::endl;
-        cout <<  _CN_rhoList << std::endl;
-        cout <<  _CN_fracList << std::endl;
-        cout <<  _CN_phiList << std::endl;
-        cout <<  _CN_propList << std::endl;
-        cout <<  nAmps << std::endl;
-        cout <<  Nmc << std::endl;
-        cout << Nmc_data << std::endl;
-        cout << "paraList.size():" << paraList.size()<<endl;
-        for(int i=0;i<paraList.size();i++)
-        {
-            cout << paraList[i] << endl;
-        }
-        cout.close();
+         //ofstream cout("data_of_priveate_member");
+         //cout << _CN_spinList << std::endl;
+        //cout <<  _CN_massList << std::endl;
+        //cout <<  _CN_mass2List << std::endl;
+        //cout <<  _CN_widthList << std::endl;
+        //cout <<  _CN_g1List << std::endl;
+        //cout <<  _CN_g2List << std::endl;
+        //cout <<  _CN_b1List << std::endl;
+        //cout <<  _CN_b2List << std::endl;
+        //cout <<  _CN_b3List << std::endl;
+        //cout <<  _CN_b4List << std::endl;
+        //cout <<  _CN_b5List << std::endl;
+        //cout <<  _CN_rhoList << std::endl;
+       // cout <<  _CN_fracList << std::endl;
+        //cout <<  _CN_phiList << std::endl;
+        ///cout <<  _CN_propList << std::endl;
+        //cout <<  nAmps << std::endl;
+        //cout <<  Nmc << std::endl;
+        //cout << Nmc_data << std::endl;
+        //cout << "paraList.size():" << paraList.size()<<endl;
+        //for(int i=0;i<paraList.size();i++)
+        //{
+            //cout << paraList[i] << endl;
+        //}
+        //cout.close();
     //ofstream cout("data_fx_result");
     if (matchArgs(allVars, analVars, theSet1)) {
         store_fx(0, Nmc + Nmc_data);
