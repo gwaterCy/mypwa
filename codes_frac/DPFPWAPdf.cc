@@ -535,6 +535,12 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         fx[i] = (sum <= 0) ? 1e-20 : sum;
         fx[i] = sum;
     }
+    //output the pwa_para
+    for(int i=iBegin;i<iEnd;i++)
+    {
+        if(h_float_pp[i*72]!=pwa_paras[i].wu[0]) assert(0);
+        cout << i <<  "cpu :: " << pwa_paras[i].wu[0]<< endl;
+    }
     //double *h_float_pp;
     int *h_parameter;
     double *h_paraList;
@@ -547,7 +553,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     for(int i = 0; i < Nmc + Nmc_data; i++) {
         for(int j=0;j<nAmps;j++)
         {
-            if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.00001) assert(0);
+            if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.001) assert(0);
         }
     }
     

@@ -7,7 +7,7 @@
 
 #ifndef _KERNEL_CALEVA_H
 #define _KERNEL_CALEVA_H
-double *d_float_pp=NULL;
+//double *d_float_pp=NULL;
 //#include "cu_PWA_PARAS.h"
     //int initialize_data(std::vector<PWA_PARAS>&, DataPointers&); // 把vector数据和指针数据对应起来，并copy到gpu里面去
     //int data_distribution(DataPointers&, CudaDataPointers&); // 把vector数据和指针数据对应起来，并copy到gpu里面去
