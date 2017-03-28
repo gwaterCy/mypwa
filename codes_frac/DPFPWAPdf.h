@@ -259,6 +259,7 @@ class DPFPWAPdf : public RooAbsPdf {
         mutable Double_t penalty;
         mutable Double_t penalty_data;
         double *h_float_pp;
+        double *d_float_pp;
         //Double_t **mcp1_data;
         //Double_t **mcp2_data;
         //Double_t **mcp3_data;

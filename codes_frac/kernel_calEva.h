@@ -14,5 +14,6 @@
     //double calEva(const PWA_PARAS &pp, int idp);
     //double kernel_calEva(const PWA_PARAS &pp,int idp);
     //void func(DataPointers& cpu_data_pointers);
-    int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int numElements,int begin);
+    void cu_malloc_h_pp(double *,double *&,int);
+    int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int numElements,int begin);
 #endif

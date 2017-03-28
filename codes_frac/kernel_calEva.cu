@@ -12,8 +12,7 @@
 using namespace std;
 
 #define CUDA_CALL(x) {const cudaError_t a=(x); if(a != cudaSuccess) {printf("\nerror in line:%d CUDAError:%s(err_num=%d)\n",__LINE__,cudaGetErrorString(a),a); cudaDeviceReset(); assert(0); }}
-
-double *d_float_pp =NULL; 
+ 
 
 
  __device__ double calEva(const cu_PWA_PARAS *pp, const int * parameter , const double * d_paraList,double *d_mlk,int idp) 
@@ -381,7 +380,7 @@ __global__ void kernel_store_fx(const double * float_pp,const int *parameter,con
         int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(double);
         cu_PWA_PARAS *pp = (cu_PWA_PARAS*)&float_pp[i*pwa_paras_size];
         d_fx[i]=calEva(pp,parameter,d_paraList,d_mlk,i);
-        printf("%dgpu :: %.7f\n",i,pp->wu[0]);
+        //printf("%dgpu :: %.7f\n",i,pp->wu[0]);
         //printf("\nfx[%d]:%f\n",i,d_fx[i]);
         //fx[i]=calEva(pp,parameter,d_paraList,i);
     }
@@ -392,20 +391,8 @@ __global__ void kernel_store_fx(const double * float_pp,const int *parameter,con
     //}
 }
 
-int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int numElements,int begin)
+int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int numElements,int begin)
 {
-    int array_size = sizeof(cu_PWA_PARAS) / sizeof(double) * numElements;
-    int mem_size = array_size * sizeof(double);
-    //std::cout << __LINE__ << endl;
-    //double *d_float_pp=NULL;
-    if(d_float_pp==NULL)
-    {
-        std::cout << "first" << endl;
-        CUDA_CALL(cudaMalloc((void **)&d_float_pp, mem_size));
-        CUDA_CALL(cudaMemcpy(d_float_pp , h_float_pp, mem_size, cudaMemcpyHostToDevice));
-    }
-        //cout << "\nd_float_pp[end]" <<h_float_pp[array_size-1] << endl;
-    //std::cout << __LINE__ << endl;
     double *d_fx;
     CUDA_CALL(cudaMalloc((void **)&(d_fx),numElements * sizeof(double)));
     //std::cout << __LINE__ << endl;
@@ -451,5 +438,13 @@ int host_store_fx(double *h_float_pp,int *h_parameter,double *h_paraList,int par
     //}
     //cout.close();
     return 0;
+}
+
+void cu_malloc_h_pp(double *h_float_pp,double *&d_float_pp,int length)
+{
+    int array_size = sizeof(cu_PWA_PARAS) / sizeof(double) * length;
+    int mem_size = array_size * sizeof(double);
+    CUDA_CALL(cudaMalloc((void **)&d_float_pp, mem_size));
+    CUDA_CALL(cudaMemcpy(d_float_pp , h_float_pp, mem_size, cudaMemcpyHostToDevice));
 }
 
