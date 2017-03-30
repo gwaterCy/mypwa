@@ -539,13 +539,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         fx[i] = (sum <= 0) ? 1e-20 : sum;
         fx[i] = sum;
     }
-    //output the pwa_para
-    //for(int i=iBegin;i<iEnd;i++)
-   // {
-     //   if(h_float_pp[i*72]!=pwa_paras[i].wu[0]) assert(0);
-       // cout << i <<  "cpu :: " << pwa_paras[i].wu[0]<< endl;
-    //}
-    //double *h_float_pp;
+    //gpu part//
     int *h_parameter;
     double *h_paraList;
     double *h_fx;
@@ -569,12 +563,11 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     }
 
     //free memory
-    //free(h_float_pp);
     free(h_parameter);
     free(h_paraList);
     free(h_fx);
     free(h_mlk);
-
+    //gpu part end!//
     Double_t sum = 0;
     Double_t carry = 0;
 
