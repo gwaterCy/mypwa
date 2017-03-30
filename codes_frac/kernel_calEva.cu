@@ -355,7 +355,7 @@ using namespace std;
             cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i][k],cuConj(fCF[i][k]) ),(double)2.0) );
         }
         double fu=cuCreal(cw);
-        d_mlk[idp*const_nAmps+i] = pa * fu;
+        //d_mlk[idp*const_nAmps+i] = pa * fu;
     }
     free(fCP);
     for(int i=0;i<const_nAmps;i++)
@@ -411,7 +411,7 @@ int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int par
 
     //init mlk
     double *d_mlk=NULL;
-    CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double) ));
+    //CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double) ));
     //ut << "nAmps="<< h_parameter[15] << "iEnd=" << (h_parameter[16]+h_parameter[17]) << endl;
     int threadsPerBlock = 256;
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
@@ -419,9 +419,9 @@ int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int par
     kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_paraList,d_fx,d_mlk, numElements,begin);
      //std::cout << __LINE__ << endl;
     CUDA_CALL(cudaGetLastError());
-    CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(double), cudaMemcpyDeviceToHost));
-    CUDA_CALL(cudaMemcpy(h_mlk , d_mlk, (h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double), cudaMemcpyDeviceToHost));
     //CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(double), cudaMemcpyDeviceToHost));
+    //CUDA_CALL(cudaMemcpy(h_mlk , d_mlk, (h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(double), cudaMemcpyDeviceToHost));
 
     //free memory
     //CUDA_CALL(cudaFree(d_float_pp));
