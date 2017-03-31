@@ -15,7 +15,7 @@ using namespace std;
  
 
 
- __device__ double calEva(const cu_PWA_PARAS *pp, const int * parameter , const double2 * complex_para ,const double * d_paraList,double *d_mlk,int idp) 
+ __device__ double calEva(const cu_PWA_PARAS *pp, const int * parameter , double2 * complex_para ,const double * d_paraList,double *d_mlk,int idp) 
     ////return square of complex amplitude
 {
     //	static int A=0;
@@ -339,7 +339,7 @@ using namespace std;
             else pa[i*const_nAmps+j]=make_cuDoubleComplex(0.0,2*cuCimag(cw));
             cw=make_cuDoubleComplex(0.0,0.0);
             for(int k=0;k<2;k++){
-                cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i][k],cuConj(fCF[j][k]) ),(double)2.0) );
+                cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i*4+k],cuConj(fCF[j*4+k]) ),(double)2.0) );
                 //   //cout<<"cwfu="<<cw<<endl;
 
             }
@@ -363,7 +363,7 @@ using namespace std;
         cw=make_cuDoubleComplex(0.0,0.0);
         for(int k=0;k<2;k++){
             //cw+=fCF[i][k]*cuConj(fCF[i][k])/(double)2.0;
-            cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i][k],cuConj(fCF[i][k]) ),(double)2.0) );
+            cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i*4+k],cuConj(fCF[i*4+k]) ),(double)2.0) );
         }
         double fu=cuCreal(cw);
         d_mlk[idp*const_nAmps+i] = pa * fu;
@@ -385,14 +385,15 @@ using namespace std;
     return (value <= 0) ? 1e-20 : value;
 }
 
-__global__ void kernel_store_fx(const double * float_pp,const int *parameter,const double *d_paraList,double * d_fx,double *d_mlk,int numElements,int begin)
+__global__ void kernel_store_fx(const double * float_pp,const int *parameter,double2 * d_complex_para ,const double *d_paraList,double * d_fx,double *d_mlk,int numElements,int begin)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     if(i<numElements && i>= begin)
     {
         int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(double);
         cu_PWA_PARAS *pp = (cu_PWA_PARAS*)&float_pp[i*pwa_paras_size];
-        d_fx[i]=calEva(pp,parameter,d_paraList,d_mlk,i);
+        double2 *complex_para=&d_complex_para[i*(2*parameter[15]+7)*parameter[15]];
+        d_fx[i]=calEva(pp,parameter,complex_para,d_paraList,d_mlk,i);
         //printf("%dgpu :: %.7f\n",i,pp->wu[0]);
         //printf("\nfx[%d]:%f\n",i,d_fx[i]);
         //fx[i]=calEva(pp,parameter,d_paraList,i);
@@ -421,7 +422,9 @@ int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int par
     CUDA_CALL(cudaMemcpy(d_paraList , h_paraList, para_size * sizeof(double), cudaMemcpyHostToDevice));
     //cout << "\nd_paraList : " <<h_paraList[0] << endl;
     //std::cout << __LINE__ << endl;
-
+    //init d_complex_para
+    double2 * d_complex_para;
+    CUDA_CALL(cudaMalloc( (void**)&d_complex_para,(h_parameter[15]*2+7)*h_parameter[15]*numElements*sizeof(double2) ));
     //init mlk
     double *d_mlk=NULL;
     CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double) ));
@@ -430,7 +433,7 @@ int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int par
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
     //printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
     printf("%d\n",sizeof(double2)*h_parameter[15]*(7+h_parameter[15])*numElements );
-    kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_paraList,d_fx,d_mlk, numElements,begin);
+    kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_complex_para,d_paraList,d_fx,d_mlk, numElements,begin);
      //std::cout << __LINE__ << endl;
     CUDA_CALL(cudaGetLastError());
     //CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(double), cudaMemcpyDeviceToHost));
@@ -440,6 +443,7 @@ int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int par
     //free memory
     //CUDA_CALL(cudaFree(d_float_pp));
     CUDA_CALL(cudaFree(d_fx));
+    CUDA_CALL(cudaFree(d_complex_para));
     CUDA_CALL(cudaFree(d_parameter));
     CUDA_CALL(cudaFree(d_paraList));
     CUDA_CALL(cudaFree(d_mlk));
