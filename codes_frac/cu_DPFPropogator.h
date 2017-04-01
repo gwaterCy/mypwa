@@ -3,11 +3,11 @@
 
 #include <cuda_runtime.h>
 
-  __device__ double2 cro(double sx, double am1, double am2);
-  __device__ double2 propogator980(double mass, double g11, double g22,double sx);
-  __device__ double2 pip(double sx);
-  __device__ double2 propogator600(double mass, double b1, double b2, double b3, double b4, double b5, double sx);
-  __device__ double2 propogator(double mass,double width,double sx) ;
-  __device__ double2 propogator1270(double mass,double width,double sx) ;
+  __device__ float2 cro(float sx, float am1, float am2);
+  __device__ float2 propogator980(float mass, float g11, float g22,float sx);
+  __device__ float2 pip(float sx);
+  __device__ float2 propogator600(float mass, float b1, float b2, float b3, float b4, float b5, float sx);
+  __device__ float2 propogator(float mass,float width,float sx) ;
+  __device__ float2 propogator1270(float mass,float width,float sx) ;
 
 #endif

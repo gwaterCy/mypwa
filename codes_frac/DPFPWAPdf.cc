@@ -195,14 +195,14 @@ DPFPWAPdf::DPFPWAPdf(const DPFPWAPdf& other, const char* name) :
     #ifdef GPU
     //init d_float_pp
     int i_End= other.pwa_paras.size();
-    int array_num = sizeof(cu_PWA_PARAS) / sizeof(double);
+    int array_num = sizeof(cu_PWA_PARAS) / sizeof(float);
     int array_size = array_num * i_End;
-    h_float_pp = new double[array_size];
+    h_float_pp = new float[array_size];
     for(int i=0;i<i_End;i++)
     {
         Double_t * k=(Double_t*)&pwa_paras[i];
         for(int j=0;j<array_num;j++)
-            h_float_pp[i*array_num+j]=(double)k[j];
+            h_float_pp[i*array_num+j]=(float)k[j];
     }
     cu_malloc_h_pp(h_float_pp,d_float_pp,pwa_paras.size() );
     free(h_float_pp);
@@ -477,18 +477,18 @@ Double_t DPFPWAPdf::evaluate() const
 //    return - sum;
 //    //return exp(- sum / analyticalIntegral(1, ""));
 }
-void DPFPWAPdf::cu_init_data(int * &h_parameter,double * &h_paraList,double *&h_fx,double * &h_mlk,int i_End) const
+void DPFPWAPdf::cu_init_data(int * &h_parameter,float * &h_paraList,float *&h_fx,float * &h_mlk,int i_End) const
 {
-    //int array_num = sizeof(cu_PWA_PARAS) / sizeof(double);
+    //int array_num = sizeof(cu_PWA_PARAS) / sizeof(float);
     //int array_size = array_num * i_End;
-    //int mem_size = array_size * sizeof(double);
+    //int mem_size = array_size * sizeof(float);
     ////init h_float_pp
-    //h_float_pp = (double *)malloc(mem_size);
+    //h_float_pp = (float *)malloc(mem_size);
     //for(int i=0;i<i_End;i++)
     //{
-    //    Double_t * k=(Double_t*)&pwa_paras[i];
+    //    float_t * k=(float_t*)&pwa_paras[i];
     //    for(int j=0;j<array_num;j++)
-    ///        h_float_pp[i*array_num+j]=(double)k[j];
+    ///        h_float_pp[i*array_num+j]=(float)k[j];
     //}
     //cout << h_float_pp << endl;
     //init h_parameter
@@ -513,18 +513,18 @@ void DPFPWAPdf::cu_init_data(int * &h_parameter,double * &h_paraList,double *&h_
     h_parameter[16] =  Nmc;
     h_parameter[17] = Nmc_data; 
     //init h_paraList
-    h_paraList=(double *)malloc(paraList.size()*sizeof(double));
+    h_paraList=(float *)malloc(paraList.size()*sizeof(float));
     for(int i=0;i<paraList.size();i++)
     {
         h_paraList[i]=paraList[i];
     }
     //init h_fx
-    //h_fx=(double *)malloc(i_End*sizeof(double));
-    h_fx=new double[i_End];
+    //h_fx=(float *)malloc(i_End*sizeof(float));
+    h_fx=new float[i_End];
     //init h_mlk
-    h_mlk = new double[(Nmc + Nmc_data)*nAmps];
+    h_mlk = new float[(Nmc + Nmc_data)*nAmps];
     //init h_paraList
-    h_paraList=(double *)malloc(paraList.size()*sizeof(double));
+    h_paraList=(float *)malloc(paraList.size()*sizeof(float));
     for(int i=0;i<paraList.size();i++)
     {
         h_paraList[i]=paraList[i];
@@ -555,9 +555,9 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     clock_t start,end;
     start= clock();
     int *h_parameter;
-    double *h_paraList;
-    double *h_fx;
-    double *h_mlk;
+    float *h_paraList;
+    float *h_fx;
+    float *h_mlk;
     //cout << "\niEnd : " << iEnd << endl;
     cu_init_data(h_parameter,h_paraList,h_fx,h_mlk,iEnd);
     host_store_fx(d_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
@@ -566,14 +566,14 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         for(int j=0;j<nAmps;j++)
         {
             //if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.000001) assert(0);
-            mlk[i][j]=h_mlk[i*nAmps+j];
+            mlk[i][j]=(double)h_mlk[i*nAmps+j];
         }
     }
     
     for(int i=iBegin;i<iEnd;i++)
     {
         //if(abs(fx[i]-h_fx[i])>0.000001) assert(0);
-        fx[i]=h_fx[i];
+        fx[i]=(double)h_fx[i];
     }
 
     //free memory
