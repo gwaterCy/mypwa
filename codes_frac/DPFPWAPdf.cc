@@ -547,11 +547,11 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
 #endif
     //gpu part//
 #ifdef GPU
-    for(int i = iBegin; i < iEnd; i++) {
+    /*for(int i = iBegin; i < iEnd; i++) {
         double sum = calEva(pwa_paras[i], i);
         fx[i] = (sum <= 0) ? 1e-20 : sum;
         fx[i] = sum;
-    }
+    }*/
     clock_t start,end;
     start= clock();
     int *h_parameter;
@@ -565,15 +565,15 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     for(int i = 0; i < Nmc + Nmc_data; i++) {
         for(int j=0;j<nAmps;j++)
         {
-            if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.000001) assert(0);
-            //mlk[i][j]=h_mlk[i*nAmps+j];
+            //if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.000001) assert(0);
+            mlk[i][j]=h_mlk[i*nAmps+j];
         }
     }
     
     for(int i=iBegin;i<iEnd;i++)
     {
-        if(abs(fx[i]-h_fx[i])>0.000001) assert(0);
-        //fx[i]=h_fx[i];
+        //if(abs(fx[i]-h_fx[i])>0.000001) assert(0);
+        fx[i]=h_fx[i];
     }
 
     //free memory
