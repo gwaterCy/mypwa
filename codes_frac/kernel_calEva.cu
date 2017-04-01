@@ -432,7 +432,7 @@ int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int par
     int threadsPerBlock = 256;
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
     //printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
-    printf("%d\n",sizeof(double2)*h_parameter[15]*(7+h_parameter[15])*numElements );
+    //printf("%d\n",sizeof(double2)*h_parameter[15]*(7+h_parameter[15])*numElements );
     kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_complex_para,d_paraList,d_fx,d_mlk, numElements,begin);
      //std::cout << __LINE__ << endl;
     CUDA_CALL(cudaGetLastError());
