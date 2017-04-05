@@ -49,8 +49,8 @@ using namespace std;
 
 
     //float2 pa[const_nAmps][const_nAmps];
-    float2 * pa=&complex_para[7*const_nAmps];
-    float2 * fu=&complex_para[(7+const_nAmps)*const_nAmps];
+    //float2 * pa=&complex_para[7*const_nAmps];
+    //float2 * fu=&complex_para[(7+const_nAmps)*const_nAmps];
 
 
     /*float2 **pa,**fu;
@@ -332,22 +332,23 @@ using namespace std;
     for(int i=0;i<const_nAmps;i++){
         //  //cout<<"haha: "<< __LINE__ << endl;    int mlk_cro_size=sizeof(float)*numElements
         for(int j=0;j<const_nAmps;j++){
-            cw=cuCmulf(fCP[i],cuConjf(fCP[j]));
+            float2 pa,fu;
+	    cw=cuCmulf(fCP[i],cuConjf(fCP[j]));
             //    //cout<<"cw="<<cw<<endl;
-            if(i==j) pa[i*const_nAmps+j]=make_cuFloatComplex(cuCrealf(cw),0.0);
-            else if(i<j) pa[i*const_nAmps+j]=make_cuFloatComplex(2*cuCrealf(cw),0.0);
-            else pa[i*const_nAmps+j]=make_cuFloatComplex(0.0,2*cuCimagf(cw));
+            if(i==j) pa=make_cuFloatComplex(cuCrealf(cw),0.0);
+            else if(i<j) pa=make_cuFloatComplex(2*cuCrealf(cw),0.0);
+            else pa=make_cuFloatComplex(0.0,2*cuCimagf(cw));
             cw=make_cuFloatComplex(0.0,0.0);
             for(int k=0;k<2;k++){
                 cw=cuCaddf(cw,cuCdivcf( cuCmulf( fCF[i*4+k],cuConjf(fCF[j*4+k]) ),(float)2.0) );
                 //   //cout<<"cwfu="<<cw<<endl;
 
             }
-            if(i<=j) fu[i*const_nAmps+j]=make_cuFloatComplex(cuCrealf(cw),0.0);
-            if(i>j) fu[i*const_nAmps+j]=make_cuFloatComplex(0.0,-cuCimagf(cw));
+            if(i<=j) fu=make_cuFloatComplex(cuCrealf(cw),0.0);
+            if(i>j) fu=make_cuFloatComplex(0.0,-cuCimagf(cw));
             //      //cout<<"pa[i][j]="<<pa[i][j]<<endl;
             //      //cout<<"fu[i][j]="<<fu[i][j]<<endl;
-            float temp = cuCrealf( cuCmulf(pa[i*const_nAmps+j],fu[i*const_nAmps+j]) );//i have a big change here 
+            float temp = cuCrealf( cuCmulf(pa,fu) );//i have a big change here 
             float y = temp - carry;
             float t = value + y;
             carry = (t - value) - y;
@@ -392,7 +393,7 @@ __global__ void kernel_store_fx(const float * float_pp,const int *parameter,floa
     {
         int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(float);
         cu_PWA_PARAS *pp = (cu_PWA_PARAS*)&float_pp[i*pwa_paras_size];
-        float2 *complex_para=&d_complex_para[i*(2*parameter[15]+7)*parameter[15]];
+        float2 *complex_para=&d_complex_para[i*7*parameter[15]];
         d_fx[i]=calEva(pp,parameter,complex_para,d_paraList,d_mlk,i);
         //printf("%dgpu :: %.7f\n",i,pp->wu[0]);
         //printf("\nfx[%d]:%f\n",i,d_fx[i]);
@@ -424,7 +425,7 @@ int host_store_fx(float *d_float_pp,int *h_parameter,float *h_paraList,int para_
     //std::cout << __LINE__ << endl;
     //init d_complex_para
     float2 * d_complex_para;
-    CUDA_CALL(cudaMalloc( (void**)&d_complex_para,(h_parameter[15]*2+7)*h_parameter[15]*numElements*sizeof(float2) ));
+    CUDA_CALL(cudaMalloc( (void**)&d_complex_para,(7)*h_parameter[15]*numElements*sizeof(float2) ));
     //init mlk
     float *d_mlk=NULL;
     CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(float) ));
