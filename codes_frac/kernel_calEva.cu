@@ -44,7 +44,7 @@ using namespace std;
     //double2 fCP[const_nAmps];
     //double2 * fCP=(double2 *)malloc(sizeof(double2)*const_nAmps);
     double2 * fCP=&complex_para[4*const_nAmps];
-    double2 * crp1=&complex_para[5*const_nAmps];
+    //double2 * crp1=&complex_para[5*const_nAmps];
     double2 * crp11=&complex_para[6*const_nAmps];
 
 
@@ -84,7 +84,7 @@ using namespace std;
         int spin_now = d_paraList[_N_spinList++];
         int propType_now = d_paraList[_N_propList++];
     //cout<<"haha: "<< __LINE__ << endl;
-
+        double2 crp1;
         rho0 *= std::exp(frac0);
         fCP[index]=make_cuDoubleComplex(rho0*std::cos(phi0),rho0*std::sin(phi0));
         //        //cout<<"fCP[index]="<<fCP[index]<<endl;
@@ -100,7 +100,7 @@ using namespace std;
                     double width0 = d_paraList[_N_widthList++];
                     //					//cout<<"mass0="<<mass0<<endl;
                     //					//cout<<"width0="<<width0<<endl;
-                    crp1[index]=propogator(mass0,width0,pp->s23);
+                    crp1=propogator(mass0,width0,pp->s23);
                 }
                 break;
             //	Flatte   Propagator Contribution
@@ -117,8 +117,8 @@ using namespace std;
      //               			//cout<<"g10="<<g10<<endl;
      //               			//cout<<"g20="<<g20<<endl;
      //                           //cout<<"pp.s23="<<pp.s23<< endl;
-                    crp1[index]=propogator980(mass980,g10,g20,pp->s23);
-     //               			//cout<<"crp1[index]="<<crp1[index]<<endl;
+                    crp1=propogator980(mass980,g10,g20,pp->s23);
+     //               			//cout<<"crp1="<<crp1<<endl;
                 }
                 break;
                 // sigma  Propagator Contribution
@@ -141,8 +141,8 @@ using namespace std;
                     double b30 = d_paraList[_N_b3List++];
                     double b40 = d_paraList[_N_b4List++];
                     double b50 = d_paraList[_N_b5List++];
-                    crp1[index]=propogator600(mass600,b10,b20,b30,b40,b50,pp->s23);
-                    //			//cout<<"crp1[index]3="<<crp1[index]<<endl;
+                    crp1=propogator600(mass600,b10,b20,b30,b40,b50,pp->s23);
+                    //			//cout<<"crp13="<<crp1<<endl;
                 }
                 break;
                 // 1- or 1+  Contribution
@@ -153,7 +153,7 @@ using namespace std;
                     //double width0=width->getVal();
                     double mass0 = d_paraList[_N_massList++];
                     double width0 = d_paraList[_N_widthList++];
-                    crp1[index]=propogator(mass0,width0,pp->sv2);
+                    crp1=propogator(mass0,width0,pp->sv2);
                     crp11[index]=propogator(mass0,width0,pp->sv3);
                 }
                 break;
@@ -172,8 +172,8 @@ using namespace std;
                     //					//cout<<"mass980="<<mass980<<endl;
                     //					//cout<<"g10="<<g10<<endl;
                     //					//cout<<"g20="<<g20<<endl;
-                    crp1[index]=propogator980(mass980,g10,g20,pp->sv);
-                    //					//cout<<"crp1[index]="<<crp1[index]<<endl;
+                    crp1=propogator980(mass980,g10,g20,pp->sv);
+                    //					//cout<<"crp1="<<crp1<<endl;
                     //RooRealVar *width = (RooRealVar*)_widthIterV[omp_id]->Next();
                     //double mass1680=mass->getVal();
                     //double width1680=width->getVal();
@@ -194,8 +194,8 @@ using namespace std;
                     double width0 = d_paraList[_N_widthList++];
                     //					//cout<<"mass0="<<mass0<<endl;
                     //					//cout<<"width0="<<width0<<endl;
-                    crp1[index]=propogator1270(mass0,width0,pp->s23);
-                    //			//cout<<"crp1[index]6="<<crp1[index]<<endl;
+                    crp1=propogator1270(mass0,width0,pp->s23);
+                    //			//cout<<"crp16="<<crp1<<endl;
                 }
             default :
                 ;
@@ -208,14 +208,14 @@ using namespace std;
             {
                 case 11:
                     //1+_1 contribution
-                    //fCF[index][i]=pp.w1p12_1[i]*crp1[index]+pp.w1p13_1[i]*crp11[i];
-                    fCF[index*4+i]=cuCadd( cuCmuldc(pp->w1p12_1[i],crp1[index]),cuCmuldc(pp->w1p13_1[i],crp11[i]) );
+                    //fCF[index][i]=pp.w1p12_1[i]*crp1+pp.w1p13_1[i]*crp11[i];
+                    fCF[index*4+i]=cuCadd( cuCmuldc(pp->w1p12_1[i],crp1),cuCmuldc(pp->w1p13_1[i],crp11[i]) );
 
                     break;
                 case 12:
                     //1+_2 contribution
-                    //c1p12_12=crp1[index]/pp.b2qbv2;
-                    c1p12_12=cuCdivcd(crp1[index],pp->b2qbv2);
+                    //c1p12_12=crp1/pp.b2qbv2;
+                    c1p12_12=cuCdivcd(crp1,pp->b2qbv2);
                     //c1p13_12=crp11[index]/pp.b2qbv3;
                     c1p13_12=cuCdivcd(crp11[index],pp->b2qbv3);
                     //fCF[index][i]=pp.w1p12_2[i]*c1p12_12+pp.w1p13_2[i]*c1p13_12;
@@ -224,8 +224,8 @@ using namespace std;
                     break;
                 case 13:
                     //1+_3 contribution
-                    //c1p12_13=crp1[index]/pp.b2qjv2;
-                    c1p12_13=cuCdivcd(crp1[index],pp->b2qjv2);
+                    //c1p12_13=crp1/pp.b2qjv2;
+                    c1p12_13=cuCdivcd(crp1,pp->b2qjv2);
                     //c1p13_13=crp11[index]/pp.b2qjv3;
                     c1p13_13=cuCdivcd(crp11[index],pp->b2qjv3);
                     //fCF[index][i]=pp.w1p12_3[i]*c1p12_13+pp.w1p13_3[i]*c1p13_13;
@@ -234,8 +234,8 @@ using namespace std;
                     break;
                 case 14:
                     //1+_4 contribution
-                    //c1p12_12=crp1[index]/pp.b2qbv2;
-                    c1p12_12=cuCdivcd(crp1[index],pp->b2qbv2);
+                    //c1p12_12=crp1/pp.b2qbv2;
+                    c1p12_12=cuCdivcd(crp1,pp->b2qbv2);
                     
                     c1p13_12=cuCdivcd(crp11[index],pp->b2qbv3);
                     c1p12_14=cuCdivcd(c1p12_12,pp->b2qjv2);
@@ -245,7 +245,7 @@ using namespace std;
                     break;
                 case 111:
                     //1-__1 contribution
-                    cr1m12_1=cuCdivcd( cuCdivcd(crp1[index],pp->b1qjv2) , pp->b1qbv2);
+                    cr1m12_1=cuCdivcd( cuCdivcd(crp1,pp->b1qjv2) , pp->b1qbv2);
                     cr1m13_1=cuCdivcd( cuCdivcd(crp11[index],pp->b1qjv3) , pp->b1qbv3);
                     fCF[index*4+i]=cuCadd( cuCmuldc(pp->w1m12[i],cr1m12_1), cuCmuldc(pp->w1m13[i],cr1m13_1));
 
@@ -253,7 +253,7 @@ using namespace std;
                 case 191:
                     //phi(1650)f0(980)_1 contribution
                     //		//cout<<"b1q2r23="<<b1q2r23<<endl;
-                    crpf1=cuCdivcd( cuCmul(crp1[index],crp11[index]),pp->b1q2r23 );
+                    crpf1=cuCdivcd( cuCmul(crp1,crp11[index]),pp->b1q2r23 );
                     //		//cout<<"crpf1="<<crpf1<<endl;
                     fCF[index*4+i]=cuCmuldc(pp->ak23w[i],crpf1);
                     //	//cout<<"fCF[index][i]="<<fCF[index][i]<<endl;
@@ -261,7 +261,7 @@ using namespace std;
                     break;
                 case 192:
                     //phi(1650)f0(980)_2 contribution
-                    crpf1=cuCdivcd( cuCmul(crp1[index],crp11[index]) , pp->b1q2r23);
+                    crpf1=cuCdivcd( cuCmul(crp1,crp11[index]) , pp->b1q2r23);
                     crpf2=cuCdivcd(crpf1,pp->b2qjvf2);
                     fCF[index*4+i]=cuCmuldc(pp->wpf22[i],crpf2);
 
@@ -270,16 +270,16 @@ using namespace std;
                     //  //cout<<"haha: "<< __LINE__ << endl;
                     //01 contribution
                     //	//cout<<"wu[i]="<<wu[i]<<endl;
-                    //	//cout<<"crp1[index]="<<crp1[index]<<endl;
+                    //	//cout<<"crp1="<<crp1<<endl;
                     //	//cout<<"index="<<index<<endl;
-                    fCF[index*4+i]=cuCmuldc(pp->wu[i],crp1[index]);
+                    fCF[index*4+i]=cuCmuldc(pp->wu[i],crp1);
                     //	//cout<<"fCF[index][i]="<<fCF[index][i]<<endl;
                     //	//cout<<"i="<<i<<endl;
 
                     break;
                 case 2:
                     //02 contribution
-                    cr0p11=cuCdivcd(crp1[index],pp->b2qjvf2);
+                    cr0p11=cuCdivcd(crp1,pp->b2qjvf2);
                     fCF[index*4+i]=cuCmuldc(pp->w0p22[i],cr0p11);
                     //	//cout<<"fCF[index][i]02="<<fCF[index][i]<<endl;
 
@@ -287,7 +287,7 @@ using namespace std;
                 case 21:
                     //21 contribution
                     //	//cout<<"b2qf2xx="<<b2qf2xx<<endl;
-                    cw2p11=cuCdivcd(crp1[index],pp->b2qf2xx);
+                    cw2p11=cuCdivcd(crp1,pp->b2qf2xx);
                     //	//cout<<"cw2p11="<<cw2p11<<endl;
                     //	//cout<<"w2p1[0]="<<w2p1[0]<<endl;
                     //	//cout<<"w2p1[1]="<<w2p1[1]<<endl;
@@ -297,28 +297,28 @@ using namespace std;
                     break;
                 case 22:
                     //22 contribution
-                    cw2p11=cuCdivcd(crp1[index],pp->b2qf2xx);
+                    cw2p11=cuCdivcd(crp1,pp->b2qf2xx);
                     cw2p12=cuCdivcd(cw2p11,pp->b2qjvf2);
                     fCF[index*4+i]=cuCmuldc(pp->w2p2[i],cw2p12);
 
                     break;
                 case 23:
                     //23 contribution
-                    cw2p11=cuCdivcd(crp1[index],pp->b2qf2xx);
+                    cw2p11=cuCdivcd(crp1,pp->b2qf2xx);
                     cw2p12=cuCdivcd(cw2p11,pp->b2qjvf2);
                     fCF[index*4+i]=cuCmuldc(pp->w2p3[i],cw2p12);
 
                     break;
                 case 24:
                     //24 contribution
-                    cw2p11=cuCdivcd(crp1[index],pp->b2qf2xx);
+                    cw2p11=cuCdivcd(crp1,pp->b2qf2xx);
                     cw2p12=cuCdivcd(cw2p11,pp->b2qjvf2);
                     fCF[index*4+i]=cuCmuldc(pp->w2p4[i],cw2p12);
 
                     break;
                 case 25:
                     //25 contribution
-                    cw2p11=cuCdivcd(crp1[index],pp->b2qf2xx);
+                    cw2p11=cuCdivcd(crp1,pp->b2qf2xx);
                     cw2p15=cuCdivcd(cw2p11,pp->b4qjvf2);
                     fCF[index*4+i]=cuCmuldc(pp->w2p5[i],cw2p15);
 
@@ -393,7 +393,7 @@ __global__ void kernel_store_fx(const double * float_pp,const int *parameter,dou
     {
         int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(double);
         cu_PWA_PARAS *pp = (cu_PWA_PARAS*)&float_pp[i*pwa_paras_size];
-        double2 *complex_para=&d_complex_para[i*(7)*parameter[15]];
+        double2 *complex_para=&d_complex_para[i*6*parameter[15]];
         d_fx[i]=calEva(pp,parameter,complex_para,d_paraList,d_mlk,i);
         //printf("%dgpu :: %.7f\n",i,pp->wu[0]);
         //printf("\nfx[%d]:%f\n",i,d_fx[i]);
@@ -425,7 +425,7 @@ int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int par
     //std::cout << __LINE__ << endl;
     //init d_complex_para
     double2 * d_complex_para;
-    CUDA_CALL(cudaMalloc( (void**)&d_complex_para,(7)*h_parameter[15]*numElements*sizeof(double2) ));
+    CUDA_CALL(cudaMalloc( (void**)&d_complex_para,6*h_parameter[15]*numElements*sizeof(double2) ));
     //init mlk
     double *d_mlk=NULL;
     CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double) ));
