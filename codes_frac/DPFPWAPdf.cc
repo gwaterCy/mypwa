@@ -27,6 +27,7 @@
 #include <iomanip>
 #include "cu_PWA_PARAS.h"
 #include "assert.h"
+#include "MultDevice.h"
 /*#include "RooAbsReal.h"
 #include "RooListProxy.h"
 #include "RooStringVar.h"
@@ -36,6 +37,7 @@
 #include<TLorentzVector.h>
 #include<TStopwatch.h>
 */
+//#define DEVICE_NUM 2
 Double_t rk=0.493677,rp=0.13957018 ;
 
 //ClassImp(DPFPWAPdf)
@@ -194,6 +196,7 @@ DPFPWAPdf::DPFPWAPdf(const DPFPWAPdf& other, const char* name) :
      }
     #ifdef GPU
     //init d_float_pp
+    d_float_pp.resize(DEVICE_NUM);
     int i_End= other.pwa_paras.size();
     int array_num = sizeof(cu_PWA_PARAS) / sizeof(double);
     int array_size = array_num * i_End;
@@ -204,7 +207,12 @@ DPFPWAPdf::DPFPWAPdf(const DPFPWAPdf& other, const char* name) :
         for(int j=0;j<array_num;j++)
             h_float_pp[i*array_num+j]=(double)k[j];
     }
-    cu_malloc_h_pp(h_float_pp,d_float_pp,pwa_paras.size() );
+    for(int i=0;i<DEVICE_NUM;i++)
+    {
+        double * temp_pp;
+        cu_malloc_h_pp(h_float_pp,temp_pp,pwa_paras.size(),i);
+        d_float_pp[i]=temp_pp;
+    }
     free(h_float_pp);
     #endif
     //cout.close();
