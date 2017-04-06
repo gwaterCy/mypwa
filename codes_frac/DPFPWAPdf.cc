@@ -511,7 +511,7 @@ void DPFPWAPdf::cu_init_data(int * &h_parameter,double * &h_paraList,double *&h_
     h_parameter[14] =  _CN_propList;
     h_parameter[15] =  nAmps;
     h_parameter[16] =  Nmc;
-    h_parameter[17] = Nmc_data; 
+    h_parameter[17] = Nmc_data;
     //init h_paraList
     h_paraList=(double *)malloc(paraList.size()*sizeof(double));
     for(int i=0;i<paraList.size();i++)
@@ -532,7 +532,7 @@ void DPFPWAPdf::cu_init_data(int * &h_parameter,double * &h_paraList,double *&h_
 }
 void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     paras_getval();
-//#pragma omp parallel 
+//#pragma omp parallel
     //for(int i = 0; i < Nmc + Nmc_data; i++) {
 #ifdef CPU
     clock_t start,end;
@@ -543,7 +543,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         fx[i] = sum;
     }
     end=clock();
-    cout << "cpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl; 
+    cout << "cpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl;
 #endif
     //gpu part//
 #ifdef GPU
@@ -561,7 +561,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     //cout << "\niEnd : " << iEnd << endl;
     cu_init_data(h_parameter,h_paraList,h_fx,h_mlk,iEnd);
     host_store_fx(d_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
-    
+
     for(int i = 0; i < Nmc + Nmc_data; i++) {
         for(int j=0;j<nAmps;j++)
         {
@@ -569,7 +569,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
             mlk[i][j]=h_mlk[i*nAmps+j];
         }
     }
-    
+
     for(int i=iBegin;i<iEnd;i++)
     {
         //if(abs(fx[i]-h_fx[i])>0.000001) assert(0);
@@ -930,7 +930,7 @@ Double_t DPFPWAPdf::calEva(const PWA_PARAS &pp, int idp) const
             {
                 case 11:
                     //1+_1 contribution
-                    fCF[index][i]=pp.w1p12_1[i]*crp1[index]+pp.w1p13_1[i]*crp11[i];
+                    fCF[index][i]=pp.w1p12_1[i]*crp1[index]+pp.w1p13_1[i]*crp11[index];
 
                     break;
                 case 12:
