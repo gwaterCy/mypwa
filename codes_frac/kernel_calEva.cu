@@ -12,7 +12,7 @@
 using namespace std;
 
 #define CUDA_CALL(x) {const cudaError_t a=(x); if(a != cudaSuccess) {printf("\nerror in line:%d CUDAError:%s(err_num=%d)\n",__LINE__,cudaGetErrorString(a),a); cudaDeviceReset(); assert(0); }}
- 
+#define BLOCK_SIZE 64
 
 
  __device__ double calEva(const cu_PWA_PARAS *pp, const int * parameter , double2 * complex_para ,const double * d_paraList,double *d_mlk,int idp) 
@@ -45,7 +45,7 @@ using namespace std;
     //double2 * fCP=(double2 *)malloc(sizeof(double2)*const_nAmps);
     double2 * fCP=&complex_para[4*const_nAmps];
     //double2 * crp1=&complex_para[5*const_nAmps];
-    double2 * crp11=&complex_para[6*const_nAmps];
+    //double2 * crp11=&complex_para[6*const_nAmps];
 
 
     //double2 pa[const_nAmps][const_nAmps];
@@ -84,14 +84,14 @@ using namespace std;
         int spin_now = d_paraList[_N_spinList++];
         int propType_now = d_paraList[_N_propList++];
     //cout<<"haha: "<< __LINE__ << endl;
-        double2 crp1;
+        double2 crp1,crp11;
         rho0 *= std::exp(frac0);
         fCP[index]=make_cuDoubleComplex(rho0*std::cos(phi0),rho0*std::sin(phi0));
         //        //cout<<"fCP[index]="<<fCP[index]<<endl;
         //std::cout << __FILE__ << __LINE__ << " : " << propType_now << std::endl;
         switch(propType_now)
         {
-            //  //cout<<"haha: "<< __LINE__ << endl;
+         //  //cout<<"haha: "<< __LINE__ << endl;
             //                     ordinary  Propagator  Contribution
             case 1:
                 {
@@ -154,7 +154,7 @@ using namespace std;
                     double mass0 = d_paraList[_N_massList++];
                     double width0 = d_paraList[_N_widthList++];
                     crp1=propogator(mass0,width0,pp->sv2);
-                    crp11[index]=propogator(mass0,width0,pp->sv3);
+                    crp11=propogator(mass0,width0,pp->sv3);
                 }
                 break;
                 //  phi(1650) f0(980) include flatte and ordinary Propagator joint Contribution
@@ -181,8 +181,8 @@ using namespace std;
                     double width1680 = d_paraList[_N_widthList++];
                     //					//cout<<"mass1680="<<mass1680<<endl;
                     //					//cout<<"width1680="<<width1680<<endl;
-                    crp11[index]=propogator(mass1680,width1680,pp->s23);
-                    //					//cout<<"crp11[index]="<<crp11[index]<<endl;
+                    crp11=propogator(mass1680,width1680,pp->s23);
+                    //					//cout<<"crp11="<<crp11<<endl;
                 }
                 break;
             case 6:
@@ -209,15 +209,15 @@ using namespace std;
                 case 11:
                     //1+_1 contribution
                     //fCF[index][i]=pp.w1p12_1[i]*crp1+pp.w1p13_1[i]*crp11[i];
-                    fCF[index*4+i]=cuCadd( cuCmuldc(pp->w1p12_1[i],crp1),cuCmuldc(pp->w1p13_1[i],crp11[i]) );
+                    fCF[index*4+i]=cuCadd( cuCmuldc(pp->w1p12_1[i],crp1),cuCmuldc(pp->w1p13_1[i],crp11) );
 
                     break;
                 case 12:
                     //1+_2 contribution
                     //c1p12_12=crp1/pp.b2qbv2;
                     c1p12_12=cuCdivcd(crp1,pp->b2qbv2);
-                    //c1p13_12=crp11[index]/pp.b2qbv3;
-                    c1p13_12=cuCdivcd(crp11[index],pp->b2qbv3);
+                    //c1p13_12=crp11/pp.b2qbv3;
+                    c1p13_12=cuCdivcd(crp11,pp->b2qbv3);
                     //fCF[index][i]=pp.w1p12_2[i]*c1p12_12+pp.w1p13_2[i]*c1p13_12;
                     fCF[index*4+i]=cuCadd( cuCmuldc(pp->w1p12_2[i],c1p12_12) , cuCmuldc(pp->w1p13_2[i],c1p13_12) );
                 
@@ -226,8 +226,8 @@ using namespace std;
                     //1+_3 contribution
                     //c1p12_13=crp1/pp.b2qjv2;
                     c1p12_13=cuCdivcd(crp1,pp->b2qjv2);
-                    //c1p13_13=crp11[index]/pp.b2qjv3;
-                    c1p13_13=cuCdivcd(crp11[index],pp->b2qjv3);
+                    //c1p13_13=crp11/pp.b2qjv3;
+                    c1p13_13=cuCdivcd(crp11,pp->b2qjv3);
                     //fCF[index][i]=pp.w1p12_3[i]*c1p12_13+pp.w1p13_3[i]*c1p13_13;
                     fCF[index*4+i]=cuCadd( cuCmuldc(pp->w1p12_3[i],c1p12_13) , cuCmuldc(pp->w1p13_3[i],c1p13_13) );
 
@@ -237,7 +237,7 @@ using namespace std;
                     //c1p12_12=crp1/pp.b2qbv2;
                     c1p12_12=cuCdivcd(crp1,pp->b2qbv2);
                     
-                    c1p13_12=cuCdivcd(crp11[index],pp->b2qbv3);
+                    c1p13_12=cuCdivcd(crp11,pp->b2qbv3);
                     c1p12_14=cuCdivcd(c1p12_12,pp->b2qjv2);
                     c1p13_14=cuCdivcd(c1p13_12,pp->b2qjv3);
                     fCF[index*4+i]=cuCadd( cuCmuldc(pp->w1p12_4[i],c1p12_14), cuCmuldc(pp->w1p13_4[i],c1p13_14));
@@ -246,14 +246,14 @@ using namespace std;
                 case 111:
                     //1-__1 contribution
                     cr1m12_1=cuCdivcd( cuCdivcd(crp1,pp->b1qjv2) , pp->b1qbv2);
-                    cr1m13_1=cuCdivcd( cuCdivcd(crp11[index],pp->b1qjv3) , pp->b1qbv3);
+                    cr1m13_1=cuCdivcd( cuCdivcd(crp11,pp->b1qjv3) , pp->b1qbv3);
                     fCF[index*4+i]=cuCadd( cuCmuldc(pp->w1m12[i],cr1m12_1), cuCmuldc(pp->w1m13[i],cr1m13_1));
 
                     break;
                 case 191:
                     //phi(1650)f0(980)_1 contribution
                     //		//cout<<"b1q2r23="<<b1q2r23<<endl;
-                    crpf1=cuCdivcd( cuCmul(crp1,crp11[index]),pp->b1q2r23 );
+                    crpf1=cuCdivcd( cuCmul(crp1,crp11),pp->b1q2r23 );
                     //		//cout<<"crpf1="<<crpf1<<endl;
                     fCF[index*4+i]=cuCmuldc(pp->ak23w[i],crpf1);
                     //	//cout<<"fCF[index][i]="<<fCF[index][i]<<endl;
@@ -261,7 +261,7 @@ using namespace std;
                     break;
                 case 192:
                     //phi(1650)f0(980)_2 contribution
-                    crpf1=cuCdivcd( cuCmul(crp1,crp11[index]) , pp->b1q2r23);
+                    crpf1=cuCdivcd( cuCmul(crp1,crp11) , pp->b1q2r23);
                     crpf2=cuCdivcd(crpf1,pp->b2qjvf2);
                     fCF[index*4+i]=cuCmuldc(pp->wpf22[i],crpf2);
 
@@ -386,15 +386,29 @@ using namespace std;
     return (value <= 0) ? 1e-20 : value;
 }
 
-__global__ void kernel_store_fx(const double * float_pp,const int *parameter,double2 * d_complex_para ,const double *d_paraList,double * d_fx,double *d_mlk,int numElements,int begin)
+__global__ void kernel_store_fx(const double * float_pp,const int *parameter,double2 * d_complex_para ,const double *d_paraList,int para_size,double * d_fx,double *d_mlk,int numElements,int begin)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
+    __shared__ int sh_parameter[18];
+    for(int i=0;i<18;i++)
+        sh_parameter[i]=parameter[i];
+    extern __shared__ double sh_paraList[];
+    for(int i=0;i<para_size;i++)
+        sh_paraList[i]=d_paraList[i];
     if(i<numElements && i>= begin)
     {
         int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(double);
-        cu_PWA_PARAS *pp = (cu_PWA_PARAS*)&float_pp[i*pwa_paras_size];
+        //cu_PWA_PARAS * pp= (cu_PWA_PARAS *)&float_pp[i*pwa_paras_size];
+        __shared__ double sh_float_pp[BLOCK_SIZE*72];
+        const double *pp = &float_pp[i*pwa_paras_size];
+        for(int j=0;j<72;j++)
+        {
+            sh_float_pp[threadIdx.x*72+j]=pp[j];
+        }
+        cu_PWA_PARAS *sh_pp=(cu_PWA_PARAS*)&sh_float_pp[threadIdx.x];
+        
         double2 *complex_para=&d_complex_para[i*6*parameter[15]];
-        d_fx[i]=calEva(pp,parameter,complex_para,d_paraList,d_mlk,i);
+        d_fx[i]=calEva(sh_pp,sh_parameter,complex_para,sh_paraList,d_mlk,i);
         //printf("%dgpu :: %.7f\n",i,pp->wu[0]);
         //printf("\nfx[%d]:%f\n",i,d_fx[i]);
         //fx[i]=calEva(pp,parameter,d_paraList,i);
@@ -421,6 +435,7 @@ int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int par
     double *d_paraList;
     CUDA_CALL(cudaMalloc((void **)&(d_paraList),para_size * sizeof(double)));
     CUDA_CALL(cudaMemcpy(d_paraList , h_paraList, para_size * sizeof(double), cudaMemcpyHostToDevice));
+    int size_paraList=para_size * sizeof(double);
     //cout << "\nd_paraList : " <<h_paraList[0] << endl;
     //std::cout << __LINE__ << endl;
     //init d_complex_para
@@ -430,11 +445,11 @@ int host_store_fx(double *d_float_pp,int *h_parameter,double *h_paraList,int par
     double *d_mlk=NULL;
     CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(double) ));
     //ut << "nAmps="<< h_parameter[15] << "iEnd=" << (h_parameter[16]+h_parameter[17]) << endl;
-    int threadsPerBlock = 256;
+    int threadsPerBlock = BLOCK_SIZE;
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
     //printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
     //printf("%d\n",sizeof(double2)*h_parameter[15]*(7+h_parameter[15])*numElements );
-    kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_complex_para,d_paraList,d_fx,d_mlk, numElements,begin);
+    kernel_store_fx<<<blocksPerGrid, threadsPerBlock,size_paraList>>>(d_float_pp, d_parameter,d_complex_para,d_paraList,para_size,d_fx,d_mlk, numElements,begin);
      //std::cout << __LINE__ << endl;
     CUDA_CALL(cudaGetLastError());
     //CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(double), cudaMemcpyDeviceToHost));
