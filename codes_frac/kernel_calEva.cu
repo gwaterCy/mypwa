@@ -405,8 +405,7 @@ __global__ void kernel_store_fx(const double * float_pp,const int *parameter,dou
         {
             sh_float_pp[threadIdx.x*72+j]=pp[j];
         }
-        cu_PWA_PARAS *sh_pp=(cu_PWA_PARAS*)&sh_float_pp[threadIdx.x];
-        
+        cu_PWA_PARAS *sh_pp=(cu_PWA_PARAS*)&sh_float_pp[threadIdx.x*72];
         double2 *complex_para=&d_complex_para[i*6*parameter[15]];
         d_fx[i]=calEva(sh_pp,sh_parameter,complex_para,sh_paraList,d_mlk,i);
         //printf("%dgpu :: %.7f\n",i,pp->wu[0]);
