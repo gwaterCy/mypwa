@@ -555,11 +555,11 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
 #endif
     //gpu part//
 #ifdef GPU
-    /*for(int i = iBegin; i < iEnd; i++) {
+    for(int i = iBegin; i < iEnd; i++) {
         double sum = calEva(pwa_paras[i], i);
         fx[i] = (sum <= 0) ? 1e-20 : sum;
         fx[i] = sum;
-    }*/
+    }
     clock_t start,end;
     start= clock();
     int *h_parameter;
@@ -569,20 +569,31 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     //cout << "\niEnd : " << iEnd << endl;
     cu_init_data(h_parameter,h_paraList,h_fx,h_mlk,iEnd);
     host_store_fx(d_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
-
+    int error_num=0;
+    double abs_error;
+    double total_error=0.0;
     for(int i = 0; i < Nmc + Nmc_data; i++) {
         for(int j=0;j<nAmps;j++)
         {
-            //if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.000001) assert(0);
-            mlk[i][j]=h_mlk[i*nAmps+j];
+            //if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.0001) assert(0);
+            //mlk[i][j]=h_mlk[i*nAmps+j];
+            abs_error=abs(mlk[i][j]-h_mlk[i*nAmps+j]);
+            if(abs_error>0.000001) error_num++;
+            total_error+=abs_error;
         }
     }
-
+    cout << "mlk error more than 0.000001 : " << error_num*100.0/(nAmps*(Nmc+Nmc_data)) << "\%  ave_error : "<< total_error/(nAmps*(Nmc+Nmc_data)) << endl;
+    error_num=0;
+    total_error=0.0;
     for(int i=iBegin;i<iEnd;i++)
     {
-        //if(abs(fx[i]-h_fx[i])>0.000001) assert(0);
-        fx[i]=h_fx[i];
+        abs_error=abs(fx[i]-h_fx[i]);
+        if(abs_error>0.000001) error_num++;
+        total_error+=abs_error;
+        //if(abs(fx[i]-h_fx[i])>0.0001) assert(0);
+        //fx[i]=h_fx[i];
     }
+    cout << "fx error more than 0.000001 : " << error_num*100.0/iEnd << "\%  ave_error : "<< total_error/iEnd << endl;
 
     //free memory
     free(h_parameter);
