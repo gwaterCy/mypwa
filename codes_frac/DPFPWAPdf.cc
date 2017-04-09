@@ -578,7 +578,11 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
             //if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.0001) assert(0);
             //mlk[i][j]=h_mlk[i*nAmps+j];
             abs_error=abs(mlk[i][j]-h_mlk[i*nAmps+j]);
-            if(abs_error>0.000001) error_num++;
+            if(abs_error>0.000000001)
+            {
+                error_num++;
+                if(i==413) printf("i : %d\n index : %d\n",i,j);
+            }
             total_error+=abs_error;
         }
     }
@@ -587,12 +591,24 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     total_error=0.0;
     for(int i=iBegin;i<iEnd;i++)
     {
+        h_fx[i] = (h_fx[i] <= 0) ? 1e-20 : h_fx[i];
         abs_error=abs(fx[i]-h_fx[i]);
-        if(abs_error>0.000001) error_num++;
+        if(abs_error>0.000001)
+        {
+           //printf("%d\n",i);
+            error_num++;
+        }
         total_error+=abs_error;
         //if(abs(fx[i]-h_fx[i])>0.0001) assert(0);
-        //fx[i]=h_fx[i];
-    }
+        //fx[i]=(h_fx[i] <= 0)? 1e-20 : h_fx[i];
+    }/*
+    if(error_num>iEnd/2)
+    {
+        for(int i=iBegin;i<iEnd;i++)
+        {
+            cout << i <<": fx[i] : " << fx[i] << "   h_fx[i] : " << h_fx[i]<< endl;
+        }
+    }*/
     cout << "fx error more than 0.000001 : " << error_num*100.0/iEnd << "\%  ave_error : "<< total_error/iEnd << endl;
 
     //free memory
@@ -941,10 +957,12 @@ Double_t DPFPWAPdf::calEva(const PWA_PARAS &pp, int idp) const
             default :
                 ;
         }
+        //if(idp ==1) printf("crp1 : %f\n",crp1[index].Re());
     //cout << "LINE: " << __LINE__ << endl;
         for(Int_t i=0;i<2;i++){
             ////cout<<"haha: "<< __LINE__ << endl;
             //		//cout<<"spin_now="<<spin_now<<endl;
+            //if(idp == 413) printf("spin_now : %d\n",spin_now);
             switch(spin_now)
             {
                 case 11:
@@ -1018,13 +1036,14 @@ Double_t DPFPWAPdf::calEva(const PWA_PARAS &pp, int idp) const
                     break;
                 case 21:
                     //21 contribution
-                    //	//cout<<"b2qf2xx="<<b2qf2xx<<endl;
+                    //if(idp == 413) cout<<"crp1="<<crp1[index].Re()<<endl;
                     cw2p11=crp1[index]/pp.b2qf2xx;
-                    //	//cout<<"cw2p11="<<cw2p11<<endl;
+                    //cout<<"cw2p11="<<cw2p11<<endl;
                     //	//cout<<"w2p1[0]="<<w2p1[0]<<endl;
                     //	//cout<<"w2p1[1]="<<w2p1[1]<<endl;
                     fCF[index][i]=pp.w2p1[i]*cw2p11;
-                    //	//cout<<"fCF[index][i]21="<<fCF[index][i]<<endl;
+                    //if(idp==413) printf("cw2p11 = %.10f fcf = %.10f\n",cw2p11.Im(),fCF[index][i].Im());
+                    //cout<<"fCF[index][i]21="<<fCF[index][i]<<endl;
 
                     break;
                 case 22:
@@ -1100,6 +1119,7 @@ Double_t DPFPWAPdf::calEva(const PWA_PARAS &pp, int idp) const
         }
         double fu=cw.Re();
         mlk[idp][i] = pa * fu;
+        //if(idp==413) printf("pa: %.10f fu: %.10f\n",pa,fu);
     }
     //    delete _spinIter_;
     //    delete _massIter_;
@@ -1116,6 +1136,7 @@ Double_t DPFPWAPdf::calEva(const PWA_PARAS &pp, int idp) const
     //    delete _phiIter_;
     //    delete _propIter_;
     ////cout << "value = " << value << endl;
+    //if(idp==1) cout << pp.wu[0] <<" "<<_N_spinList<<" "<<paraList[0]<<" "<<endl;
     return (value <= 0) ? 1e-20 : value;
 }
 

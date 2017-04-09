@@ -201,10 +201,13 @@ using namespace std;
             default :
                 ;
         }
+        //if(idp ==1) printf("crp1 : %f\n",cuCreal(crp1));
     //cout << "LINE: " << __LINE__ << endl;
+            //if(idp==413) printf("spin_now : %d\n",spin_now);
         for(int i=0;i<2;i++){
             ////cout<<"haha: "<< __LINE__ << endl;
             //		//cout<<"spin_now="<<spin_now<<endl;
+            //(idp==413) printf("spin_now : %d\n",spin_now);
             switch(spin_now)
             {
                 case 11:
@@ -289,10 +292,12 @@ using namespace std;
                     //21 contribution
                     //	//cout<<"b2qf2xx="<<b2qf2xx<<endl;
                     cw2p11=cuCdivcd(crp1,pp->b2qf2xx);
+                    //if(idp==413) printf("crp1 : %.10f b2qf2xx : %.10f ",cuCreal(crp1),pp->b2qf2xx);
                     //	//cout<<"cw2p11="<<cw2p11<<endl;
                     //	//cout<<"w2p1[0]="<<w2p1[0]<<endl;
                     //	//cout<<"w2p1[1]="<<w2p1[1]<<endl;
                     fCF[index*4+i]=cuCmuldc(pp->w2p1[i],cw2p11);
+                    //if(idp == 413) printf("cw2p11 = %.10f fcf = %.10f\n",cuCimag(cw2p11),cuCimag(fCF[index*4+i]));
                     //	//cout<<"fCF[index][i]21="<<fCF[index][i]<<endl;
 
                     break;
@@ -333,23 +338,25 @@ using namespace std;
     for(int i=0;i<const_nAmps;i++){
         //  //cout<<"haha: "<< __LINE__ << endl;    int mlk_cro_size=sizeof(double)*end
         for(int j=0;j<const_nAmps;j++){
-	    double2 pa,fu;
+	        double pa,fu;
             cw=cuCmul(fCP[i],cuConj(fCP[j]));
             //    //cout<<"cw="<<cw<<endl;
-            if(i==j) pa=make_cuDoubleComplex(cuCreal(cw),0.0);
-            else if(i<j) pa=make_cuDoubleComplex(2*cuCreal(cw),0.0);
-            else pa=make_cuDoubleComplex(0.0,2*cuCimag(cw));
+            if(i==j) pa=cuCreal(cw);
+            else if(i<j) pa=2*cuCreal(cw);
+            else pa=2*cuCimag(cw);
+            //else pa=make_cuDoubleComplex(0.0,2*cuCimag(cw));
             cw=make_cuDoubleComplex(0.0,0.0);
             for(int k=0;k<2;k++){
-                cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i*4+k],cuConj(fCF[j*4+k]) ),(double)2.0) );
+                cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i*4+k],cuConj(fCF[j*4+k]) ),2.0) );
                 //   //cout<<"cwfu="<<cw<<endl;
 
             }
-            if(i<=j) fu=make_cuDoubleComplex(cuCreal(cw),0.0);
-            if(i>j) fu=make_cuDoubleComplex(0.0,-cuCimag(cw));
+            if(i<=j) fu=cuCreal(cw);
+            if(i>j) fu=-cuCimag(cw);
+            //if(i>j) fu=make_cuDoubleComplex(0.0,-cuCimag(cw));
             //      //cout<<"pa[i][j]="<<pa[i][j]<<endl;
             //      //cout<<"fu[i][j]="<<fu[i][j]<<endl;
-            double temp = cuCreal( cuCmul(pa,fu) );//i have a big change here 
+            double temp = pa*fu;//i have a big change here 
             double y = temp - carry;
             double t = value + y;
             carry = (t - value) - y;
@@ -365,10 +372,11 @@ using namespace std;
         cw=make_cuDoubleComplex(0.0,0.0);
         for(int k=0;k<2;k++){
             //cw+=fCF[i][k]*cuConj(fCF[i][k])/(double)2.0;
-            cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i*4+k],cuConj(fCF[i*4+k]) ),(double)2.0) );
+            cw=cuCadd(cw,cuCdivcd( cuCmul( fCF[i*4+k],cuConj(fCF[i*4+k]) ),2.0) );
         }
         double fu=cuCreal(cw);
         d_mlk[idp*const_nAmps+i] = pa * fu;
+       //f(idp==413) printf("pa: %.10f  fu: %.10f\n",pa ,fu);
     }
     /*
     free(fCP);
@@ -384,6 +392,7 @@ using namespace std;
     free(crp1);
     free(crp11);
 */
+    //if(idp==1) printf("%f %d %f \n", pp->wu[0] ,_N_spinList,d_paraList[0]);
     return (value <= 0) ? 1e-20 : value;
 }
 
