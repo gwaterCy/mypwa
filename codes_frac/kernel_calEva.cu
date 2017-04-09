@@ -410,7 +410,7 @@ __global__ void kernel_store_fx(const double * float_pp,const int *parameter,dou
         int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(double);
         //cu_PWA_PARAS * pp= (cu_PWA_PARAS *)&float_pp[i*pwa_paras_size];
         __shared__ double sh_float_pp[BLOCK_SIZE*72];
-        const double *pp = &float_pp[i*pwa_paras_size];
+        const double *pp = &float_pp[(i+begin)*pwa_paras_size];
         for(int j=0;j<72;j++)
         {
             sh_float_pp[threadIdx.x*72+j]=pp[j];
