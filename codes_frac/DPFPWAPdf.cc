@@ -578,10 +578,10 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
             //if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.0001) assert(0);
             //mlk[i][j]=h_mlk[i*nAmps+j];
             abs_error=abs(mlk[i][j]-h_mlk[i*nAmps+j]);
-            if(abs_error>0.000000001)
+            if(abs_error>0.0000001)
             {
                 error_num++;
-                if(i==413) printf("i : %d\n index : %d\n",i,j);
+                //if(i==413) printf("i : %d\n index : %d\n",i,j);
             }
             total_error+=abs_error;
         }
@@ -1119,7 +1119,7 @@ Double_t DPFPWAPdf::calEva(const PWA_PARAS &pp, int idp) const
         }
         double fu=cw.Re();
         mlk[idp][i] = pa * fu;
-        //if(idp==413) printf("pa: %.10f fu: %.10f\n",pa,fu);
+        if(idp==413 && i==3) printf("pa: %.10f fu: %.10f mlk : %.10f\n",pa,fu,mlk[idp][i]);
     }
     //    delete _spinIter_;
     //    delete _massIter_;
