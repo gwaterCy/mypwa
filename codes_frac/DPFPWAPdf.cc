@@ -602,6 +602,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         //if(abs(fx[i]-h_fx[i])>0.0001) assert(0);
         //fx[i]=(h_fx[i] <= 0)? 1e-20 : h_fx[i];
     }/*
+
     if(error_num>iEnd/2)
     {
         for(int i=iBegin;i<iEnd;i++)
@@ -609,15 +610,53 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
             cout << i <<": fx[i] : " << fx[i] << "   h_fx[i] : " << h_fx[i]<< endl;
         }
     }*/
-    cout << "fx error more than 0.000001 : " << error_num*100.0/iEnd << "\%  ave_error : "<< total_error/iEnd << endl;
-
+    cout << "fx error more than 0.000001 : " << error_num*100.0/iEnd << "\%  ave_error : "<< total_error << endl;
     //free memory
+    end=clock();
+    cout << "gpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl;
+
+    double d_sum=0,d_carry=0;
+    for(int i = 0; i < Nmc; i++)
+    {
+        //  //cout<<"haha: "<< __LINE__ << endl;
+        /*double y = h_fx[i] - d_carry;
+        double t = d_sum + y;
+        d_carry = (t - d_sum) - y;
+        d_sum = t; // Kahan Summation*/
+        d_sum+=h_fx[i];
+    }
+    double d_anaIntegral = d_sum;
+
+    d_sum = 0;
+    for(int i = 0; i < nAmps; i++)
+    {
+        double tt = 0;
+//#pragma omp parallel for reduction(+:tt)
+        for(int j = 0; j < Nmc; j++)
+        {
+            tt += h_mlk[j*nAmps+i];
+        }
+        d_sum += sqrt(tt / Nmc);
+    }
+    double d_penalty = d_sum;
+
+    d_sum = 0;
+    for(int i = 0; i < nAmps; i++)
+    {
+        double tt = 0;
+//#pragma omp parallel for reduction(+:tt)
+        for(int j = Nmc; j < Nmc + Nmc_data; j++)
+        {
+            tt += h_mlk[j*nAmps+i];
+        }
+        d_sum += sqrt(tt);
+    }
+    double d_penalty_data = d_sum;
     free(h_parameter);
     free(h_paraList);
     free(h_fx);
     free(h_mlk);
-    end=clock();
-    cout << "gpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl;
+
 #endif
     //gpu part end!//
     Double_t sum = 0;
@@ -633,6 +672,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         sum = t; // Kahan Summation
     }
     anaIntegral = sum;
+    printf("gpu_anaIntegral : %.10f  cpu_anaIntegral : %.10f\n",d_anaIntegral,anaIntegral);
 
     sum = 0;
     for(int i = 0; i < nAmps; i++)
@@ -647,6 +687,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     }
     penalty = sum;
 
+    printf("gpu_penalty : %.10f  cpu_penalty : %.10f\n",d_penalty,penalty);
     sum = 0;
     for(int i = 0; i < nAmps; i++)
     {
@@ -659,6 +700,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         sum += sqrt(tt);
     }
     penalty_data = sum;
+    printf("gpu_penalty_data : %.10f  cpu_penalty_data : %.10f\n--------------------------------------------------\n",d_penalty_data,penalty_data);
 }
 
 Double_t DPFPWAPdf::evaluate(int _idp) const
@@ -1119,7 +1161,7 @@ Double_t DPFPWAPdf::calEva(const PWA_PARAS &pp, int idp) const
         }
         double fu=cw.Re();
         mlk[idp][i] = pa * fu;
-        if(idp==413 && i==3) printf("pa: %.10f fu: %.10f mlk : %.10f\n",pa,fu,mlk[idp][i]);
+        //if(idp==413 && i==3) printf("pa: %.10f fu: %.10f mlk : %.10f\n",pa,fu,mlk[idp][i]);
     }
     //    delete _spinIter_;
     //    delete _massIter_;

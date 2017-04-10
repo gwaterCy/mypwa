@@ -376,7 +376,7 @@ using namespace std;
         }
         double fu=cuCreal(cw);
         d_mlk[idp*const_nAmps+i] = pa * fu;
-       //f(idp==413) printf("pa: %.10f  fu: %.10f\n",pa ,fu);
+        //if(idp==413 && i==3 ) printf("pa: %.10f  fu: %.10f mlk %.10f\n",pa ,fu,d_mlk[idp*const_nAmps+i]);
     }
     /*
     free(fCP);
