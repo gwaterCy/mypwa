@@ -12,10 +12,16 @@
 #include "MultDevice.h"
 using namespace std;
 
+//将任何cuda函数作为CUDA_CALL的参数，能够显示返回的错误，并定位错误。 
 #define CUDA_CALL(x) {const cudaError_t a=(x); if(a != cudaSuccess) {printf("\nerror in line:%d CUDAError:%s(err_num=%d)\n",__LINE__,cudaGetErrorString(a),a); cudaDeviceReset(); assert(0); }}
+//block_size 的设定要考虑shared memory 的大小
+//shared memory per block ：41952 bytes
+//每个block所使用的共享空间大小 ：18×int + paraList + 72×BLOCK_SIZE  
+//控制BLOCK_SIZE 使所使用的shared memory 不可高于上限
 #define BLOCK_SIZE 64
-//#define DEVICE_NUM 2 
 
+
+//calEva是在gpu中运行的一个子程序
  __device__ double calEva(const cu_PWA_PARAS *pp, const int * parameter , double2 * complex_para ,const double * d_paraList,double *d_mlk,int idp) 
     ////return square of complex amplitude
 {
@@ -399,12 +405,16 @@ using namespace std;
 __global__ void kernel_store_fx(const double * float_pp,const int *parameter,double2 * d_complex_para ,const double *d_paraList,int para_size,double * d_fx,double *d_mlk,int end,int begin)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
+    
+    //使用shared memory 开辟静态内存
     __shared__ int sh_parameter[18];
     for(int i=0;i<18;i++)
         sh_parameter[i]=parameter[i];
+    //使用shared memory 开辟动态内存
     extern __shared__ double sh_paraList[];
     for(int i=0;i<para_size;i++)
         sh_paraList[i]=d_paraList[i];
+
     if(i<end-begin && i>= 0)
     {
         int pwa_paras_size = sizeof(cu_PWA_PARAS) / sizeof(double);
@@ -417,12 +427,12 @@ __global__ void kernel_store_fx(const double * float_pp,const int *parameter,dou
         }
         cu_PWA_PARAS *sh_pp=(cu_PWA_PARAS*)&sh_float_pp[threadIdx.x*72];
         double2 *complex_para=&d_complex_para[i*6*parameter[15]];
+        //将各个参数传到gpu中的内存后，调用子函数calEva 
         d_fx[i]=calEva(sh_pp,sh_parameter,complex_para,sh_paraList,d_mlk,i);
         //printf("%dgpu :: %.7f\n",i,pp->wu[0]);
         //printf("\nfx[%d]:%f\n",i,d_fx[i]);
         //fx[i]=calEva(pp,parameter,d_paraList,i);
     }
-
     //if(i==1)
     //{
         //printf("pp[0]:%f pp[end]:%f parameter[0]:%d parameter[16]:%d paraList[0]:%f \n",float_pp[0],float_pp[end*sizeof(cu_PWA_PARAS)/sizeof(double)-1],parameter[0],parameter[16],d_paraList[0]);
@@ -432,6 +442,7 @@ __global__ void kernel_store_fx(const double * float_pp,const int *parameter,dou
 int host_store_fx(vector<double *> d_float_pp,int *h_parameter,double *h_paraList,int para_size, double *h_fx,double * h_mlk,int end,int begin)
 {
     //init Ns
+    //Ns为分段数组，第i个gpu所处理的线程序号范围为:[ Ns[i] , Ns[i+1] ) 
     int Ns[DEVICE_NUM+1];
     Ns[0]=0;
     for(int i=1;i<DEVICE_NUM;i++)
@@ -455,6 +466,7 @@ int host_store_fx(vector<double *> d_float_pp,int *h_parameter,double *h_paraLis
         CUDA_CALL(cudaMalloc( (void**)&d_complex_para[i],6*h_parameter[15]*N_thread *sizeof(double2) ));
         CUDA_CALL(cudaMalloc( (void **)&(d_mlk[i]),(N_thread*h_parameter[15]*sizeof(double) )));
     }
+    //动态分配shared memory 的大小：
     int size_paraList=para_size*sizeof(double);
     //memcpy d_parameter
     for(int i=0;i<DEVICE_NUM;i++)
@@ -478,9 +490,6 @@ int host_store_fx(vector<double *> d_float_pp,int *h_parameter,double *h_paraLis
         int blocksPerGrid =(N_thread + threadsPerBlock - 1) / threadsPerBlock;
         printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
         kernel_store_fx<<<blocksPerGrid, threadsPerBlock,size_paraList>>>(d_float_pp[i], d_parameter[i],d_complex_para[i],d_paraList[i],para_size,d_fx[i],d_mlk[i],Ns[i+1],Ns[i]);
-        //CUDA_CALL(cudaMemcpyAsync(&h_mlk[ Ns[i]*h_parameter[15] ] , d_mlk, N_thread * h_parameter[15]*sizeof(double), cudaMemcpyDeviceToHost));
-        //CUDA_CALL(cudaMemcpyAsync(&h_fx[Ns[i]] , d_fx[i], N_thread * sizeof(double), cudaMemcpyDeviceToHost));
-        //CUDA_CALL(cudaMemcpyAsync(&h_mlk[ Ns[i]*h_parameter[15] ] , d_mlk[i], N_thread * h_parameter[15]*sizeof(double), cudaMemcpyDeviceToHost));
     }
     for(int i=0;i<DEVICE_NUM;i++)
     {
@@ -516,7 +525,7 @@ int host_store_fx(vector<double *> d_float_pp,int *h_parameter,double *h_paraLis
     //cout.close();
     return 0;
 }
-
+//在gpu中为pwa_paras开辟空间
 void cu_malloc_h_pp(double *h_float_pp,double *&d_float_pp,int length,int device)
 {
     CUDA_CALL( cudaSetDevice(device) );

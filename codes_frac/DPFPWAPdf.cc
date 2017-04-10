@@ -555,13 +555,14 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
 #endif
     //gpu part//
 #ifdef GPU
-    for(int i = iBegin; i < iEnd; i++) {
-        double sum = calEva(pwa_paras[i], i);
-        fx[i] = (sum <= 0) ? 1e-20 : sum;
-        fx[i] = sum;
-    }
+    //for(int i = iBegin; i < iEnd; i++) {
+    //    double sum = calEva(pwa_paras[i], i);
+    //    fx[i] = (sum <= 0) ? 1e-20 : sum;
+    //    fx[i] = sum;
+    //}
     clock_t start,end;
     start= clock();
+
     int *h_parameter;
     double *h_paraList;
     double *h_fx;
@@ -569,38 +570,38 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     //cout << "\niEnd : " << iEnd << endl;
     cu_init_data(h_parameter,h_paraList,h_fx,h_mlk,iEnd);
     host_store_fx(d_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
-    int error_num=0;
-    double abs_error;
-    double total_error=0.0;
+    //int error_num=0;
+    //double abs_error;
+    //double total_error=0.0;
     for(int i = 0; i < Nmc + Nmc_data; i++) {
         for(int j=0;j<nAmps;j++)
         {
             //if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.0001) assert(0);
-            //mlk[i][j]=h_mlk[i*nAmps+j];
-            abs_error=abs(mlk[i][j]-h_mlk[i*nAmps+j]);
-            if(abs_error>0.0000001)
-            {
-                error_num++;
-                //if(i==413) printf("i : %d\n index : %d\n",i,j);
-            }
-            total_error+=abs_error;
+            mlk[i][j]=h_mlk[i*nAmps+j];
+            //abs_error=abs(mlk[i][j]-h_mlk[i*nAmps+j]);
+            //if(abs_error>0.0000001)
+            //{
+            //    error_num++;
+            //    //if(i==413) printf("i : %d\n index : %d\n",i,j);
+            //}
+            //total_error+=abs_error;
         }
     }
-    cout << "mlk error more than 0.000001 : " << error_num*100.0/(nAmps*(Nmc+Nmc_data)) << "\%  ave_error : "<< total_error/(nAmps*(Nmc+Nmc_data)) << endl;
-    error_num=0;
-    total_error=0.0;
+    //cout << "mlk error more than 0.000001 : " << error_num*100.0/(nAmps*(Nmc+Nmc_data)) << "\%  ave_error : "<< total_error/(nAmps*(Nmc+Nmc_data)) << endl;
+    //error_num=0;
+    //total_error=0.0;
     for(int i=iBegin;i<iEnd;i++)
     {
-        h_fx[i] = (h_fx[i] <= 0) ? 1e-20 : h_fx[i];
-        abs_error=abs(fx[i]-h_fx[i]);
-        if(abs_error>0.000001)
-        {
+        //h_fx[i] = (h_fx[i] <= 0) ? 1e-20 : h_fx[i];
+        //abs_error=abs(fx[i]-h_fx[i]);
+        //if(abs_error>0.000001)
+        //{
            //printf("%d\n",i);
-            error_num++;
-        }
-        total_error+=abs_error;
+        //    error_num++;
+        //}
+        //total_error+=abs_error;
         //if(abs(fx[i]-h_fx[i])>0.0001) assert(0);
-        //fx[i]=(h_fx[i] <= 0)? 1e-20 : h_fx[i];
+        fx[i]=(h_fx[i] <= 0)? 1e-20 : h_fx[i];
     }/*
 
     if(error_num>iEnd/2)
@@ -610,19 +611,18 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
             cout << i <<": fx[i] : " << fx[i] << "   h_fx[i] : " << h_fx[i]<< endl;
         }
     }*/
-    cout << "fx error more than 0.000001 : " << error_num*100.0/iEnd << "\%  ave_error : "<< total_error << endl;
-    //free memory
+    //cout << "fx error more than 0.000001 : " << error_num*100.0/iEnd << "\%  ave_error : "<< total_error << endl;
     end=clock();
     cout << "gpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl;
-
+/*
     double d_sum=0,d_carry=0;
     for(int i = 0; i < Nmc; i++)
     {
         //  //cout<<"haha: "<< __LINE__ << endl;
-        /*double y = h_fx[i] - d_carry;
+        double y = h_fx[i] - d_carry;
         double t = d_sum + y;
         d_carry = (t - d_sum) - y;
-        d_sum = t; // Kahan Summation*/
+        d_sum = t; // Kahan Summation
         d_sum+=h_fx[i];
     }
     double d_anaIntegral = d_sum;
@@ -651,7 +651,10 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         }
         d_sum += sqrt(tt);
     }
+
     double d_penalty_data = d_sum;
+*/
+//free memory
     free(h_parameter);
     free(h_paraList);
     free(h_fx);
@@ -672,7 +675,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         sum = t; // Kahan Summation
     }
     anaIntegral = sum;
-    printf("gpu_anaIntegral : %.10f  cpu_anaIntegral : %.10f\n",d_anaIntegral,anaIntegral);
+    //printf("gpu_anaIntegral : %.10f  cpu_anaIntegral : %.10f\n",d_anaIntegral,anaIntegral);
 
     sum = 0;
     for(int i = 0; i < nAmps; i++)
@@ -687,7 +690,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     }
     penalty = sum;
 
-    printf("gpu_penalty : %.10f  cpu_penalty : %.10f\n",d_penalty,penalty);
+    //printf("gpu_penalty : %.10f  cpu_penalty : %.10f\n",d_penalty,penalty);
     sum = 0;
     for(int i = 0; i < nAmps; i++)
     {
@@ -700,7 +703,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         sum += sqrt(tt);
     }
     penalty_data = sum;
-    printf("gpu_penalty_data : %.10f  cpu_penalty_data : %.10f\n--------------------------------------------------\n",d_penalty_data,penalty_data);
+    //printf("gpu_penalty_data : %.10f  cpu_penalty_data : %.10f\n--------------------------------------------------\n",d_penalty_data,penalty_data);
 }
 
 Double_t DPFPWAPdf::evaluate(int _idp) const
