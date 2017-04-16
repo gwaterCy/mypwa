@@ -398,7 +398,7 @@ __global__ void kernel_store_fx(const float * float_pp,const int *parameter,floa
         for(int j=0;j<72;j++)
             sh_float_pp[threadIdx.x*72+j]=pp[j];
         cu_PWA_PARAS *sh_pp = (cu_PWA_PARAS*)&sh_float_pp[threadIdx.x*72];
-        float2 *complex_para=&d_complex_para[i*5*parameter[15]];
+        float2 *complex_para=&d_complex_para[i*6*parameter[15]];
         d_fx[i]=calEva(sh_pp,parameter,complex_para,d_paraList,d_mlk,i);
         //printf("%dgpu :: %.7f\n",i,pp->wu[0]);
         //printf("\nfx[%d]:%f\n",i,d_fx[i]);
@@ -430,7 +430,7 @@ int host_store_fx(float *d_float_pp,int *h_parameter,float *h_paraList,int para_
     //std::cout << __LINE__ << endl;
     //init d_complex_para
     float2 * d_complex_para;
-    CUDA_CALL(cudaMalloc( (void**)&d_complex_para,(5)*h_parameter[15]*numElements*sizeof(float2) ));
+    CUDA_CALL(cudaMalloc( (void**)&d_complex_para,(6)*h_parameter[15]*numElements*sizeof(float2) ));
     //init mlk
     float *d_mlk=NULL;
     CUDA_CALL(cudaMalloc( (void **)&(d_mlk),(h_parameter[16]+h_parameter[17])*h_parameter[15]*sizeof(float) ));
