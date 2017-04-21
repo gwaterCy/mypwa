@@ -1,5 +1,5 @@
 const_paras=f01000a_mss_,f01000a_wdt_,f21000a_mss_,f21000a_wdt_
-active_resonances=f01000,f21000,f00980,f01370,f01500,f01710,f02020,f02100,f02200,f02330,f02201,f21270,f21525,f21501,f21810,f21910,f22150,f22300
+active_resonances=f00980,f01000,f21000,f21270
 active_resonances_kk=NONE
 active_resonances_pp=NONE
 
