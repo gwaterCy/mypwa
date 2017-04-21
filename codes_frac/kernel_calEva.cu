@@ -386,9 +386,17 @@ using namespace std;
     return (value <= 0) ? 1e-20 : value;
 }
 
-__global__ void kernel_store_fx(const float * float_pp,const int *parameter,float2 * d_complex_para ,const float *d_paraList,float * d_fx,float *d_mlk,int numElements,int begin)
+__global__ void kernel_store_fx(const float * float_pp,const int *parameter,float2 * d_complex_para ,const float *d_paraList,int para_size,float * d_fx,float *d_mlk,int numElements,int begin)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
+    __shared__ int sh_parameter[18];
+    for(int i=0;i<18;i++)
+        sh_parameter[i]=parameter[i];
+    //使用shared memory 开辟空间
+    extern __shared__ float sh_paraList[];
+    for(int i=0;i<para_size;i++)
+        sh_paraList[i]=d_paraList[i];
+
     if(i<numElements && i>= begin)
     {
         __shared__ float sh_float_pp[72*BLOCK_SIZE];
@@ -399,7 +407,7 @@ __global__ void kernel_store_fx(const float * float_pp,const int *parameter,floa
             sh_float_pp[threadIdx.x*72+j]=pp[j];
         cu_PWA_PARAS *sh_pp = (cu_PWA_PARAS*)&sh_float_pp[threadIdx.x*72];
         float2 *complex_para=&d_complex_para[i*6*parameter[15]];
-        d_fx[i]=calEva(sh_pp,parameter,complex_para,d_paraList,d_mlk,i);
+        d_fx[i]=calEva(sh_pp,sh_parameter,complex_para,sh_paraList,d_mlk,i);
         //printf("%dgpu :: %.7f\n",i,pp->wu[0]);
         //printf("\nfx[%d]:%f\n",i,d_fx[i]);
         //fx[i]=calEva(pp,parameter,d_paraList,i);
@@ -430,6 +438,7 @@ int host_store_fx(float *d_float_pp,int *h_parameter,float *h_paraList,int para_
     //std::cout << __LINE__ << endl;
     //init d_complex_para
     float2 * d_complex_para;
+    int size_paraList=para_size*sizeof(float);
     CUDA_CALL(cudaMalloc( (void**)&d_complex_para,(6)*h_parameter[15]*numElements*sizeof(float2) ));
     //init mlk
     float *d_mlk=NULL;
@@ -439,7 +448,7 @@ int host_store_fx(float *d_float_pp,int *h_parameter,float *h_paraList,int para_
     int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
     //printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
     //printf("%d\n",sizeof(float2)*h_parameter[15]*(7+h_parameter[15])*numElements );
-    kernel_store_fx<<<blocksPerGrid, threadsPerBlock>>>(d_float_pp, d_parameter,d_complex_para,d_paraList,d_fx,d_mlk, numElements,begin);
+    kernel_store_fx<<<blocksPerGrid, threadsPerBlock,size_paraList>>>(d_float_pp, d_parameter,d_complex_para,d_paraList,para_size,d_fx,d_mlk, numElements,begin);
      //std::cout << __LINE__ << endl;
     CUDA_CALL(cudaGetLastError());
     //CUDA_CALL(cudaMemcpy(h_fx , d_fx, numElements * sizeof(float), cudaMemcpyDeviceToHost));

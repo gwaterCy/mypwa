@@ -511,7 +511,7 @@ void DPFPWAPdf::cu_init_data(int * &h_parameter,float * &h_paraList,float *&h_fx
     h_parameter[14] =  _CN_propList;
     h_parameter[15] =  nAmps;
     h_parameter[16] =  Nmc;
-    h_parameter[17] = Nmc_data; 
+    h_parameter[17] = Nmc_data;
     //init h_paraList
     h_paraList=(float *)malloc(paraList.size()*sizeof(float));
     for(int i=0;i<paraList.size();i++)
@@ -532,18 +532,22 @@ void DPFPWAPdf::cu_init_data(int * &h_parameter,float * &h_paraList,float *&h_fx
 }
 void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     paras_getval();
-//#pragma omp parallel 
+//#pragma omp parallel
     //for(int i = 0; i < Nmc + Nmc_data; i++) {
 #ifdef CPU
+    for(int down=0;down<iEnd;down+=10000)
+    {
     clock_t start,end;
     start= clock();
-    for(int i = iBegin; i < iEnd; i++) {
+    for(int i = iBegin; i < iEnd-down; i++) {
         double sum = calEva(pwa_paras[i], i);
         fx[i] = (sum <= 0) ? 1e-20 : sum;
         fx[i] = sum;
     }
     end=clock();
-    cout << "cpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl; 
+    printf("iEnd : %d",iEnd-down);
+    cout << "cpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl;
+    }
 #endif
     //gpu part//
 #ifdef GPU
@@ -552,6 +556,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
         fx[i] = (sum <= 0) ? 1e-20 : sum;
         fx[i] = sum;
     }*/
+    for(int down=0;down<iEnd;down+=10000){
     clock_t start,end;
     start= clock();
     int *h_parameter;
@@ -560,8 +565,8 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     float *h_mlk;
     //cout << "\niEnd : " << iEnd << endl;
     cu_init_data(h_parameter,h_paraList,h_fx,h_mlk,iEnd);
-    host_store_fx(d_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
-    
+    host_store_fx(d_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd-down,iBegin);
+
     for(int i = 0; i < Nmc + Nmc_data; i++) {
         for(int j=0;j<nAmps;j++)
         {
@@ -569,7 +574,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
             mlk[i][j]=(double)h_mlk[i*nAmps+j];
         }
     }
-    
+
     for(int i=iBegin;i<iEnd;i++)
     {
         //if(abs(fx[i]-h_fx[i])>0.000001) assert(0);
@@ -582,7 +587,8 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     free(h_fx);
     free(h_mlk);
     end=clock();
-    cout << "gpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl;
+    printf("iEnd : %d\n",iEnd-down);
+    cout << "gpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl;}
 #endif
     //gpu part end!//
     Double_t sum = 0;
