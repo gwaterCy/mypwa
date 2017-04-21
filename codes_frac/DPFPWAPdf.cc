@@ -543,15 +543,19 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
 //#pragma omp parallel
     //for(int i = 0; i < Nmc + Nmc_data; i++) {
 #ifdef CPU
+    for(int down=0;down<iEnd;down+=10000)
+    {
     clock_t start,end;
     start= clock();
-    for(int i = iBegin; i < iEnd; i++) {
+    for(int i = iBegin; i < iEnd-down; i++) {
         double sum = calEva(pwa_paras[i], i);
         fx[i] = (sum <= 0) ? 1e-20 : sum;
         fx[i] = sum;
     }
     end=clock();
+    printf("iEnd: %d\n",iEnd-down);
     cout << "cpu part  time :" <<(double)(end-start)/CLOCKS_PER_SEC << "S" << endl;
+    }
 #endif
     //gpu part//
 #ifdef GPU
@@ -560,20 +564,22 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     //    fx[i] = (sum <= 0) ? 1e-20 : sum;
     //    fx[i] = sum;
     //}
+    for(int down=0;down<iEnd;down+=10000)
+    {
     clock_t start,end;
     start= clock();
-
+    printf("iEnd : %d\n",iEnd-down);
     int *h_parameter;
     double *h_paraList;
     double *h_fx;
     double *h_mlk;
     //cout << "\niEnd : " << iEnd << endl;
-    cu_init_data(h_parameter,h_paraList,h_fx,h_mlk,iEnd);
-    host_store_fx(d_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd,iBegin);
+    cu_init_data(h_parameter,h_paraList,h_fx,h_mlk,iEnd-down);
+    host_store_fx(d_float_pp,h_parameter,h_paraList,paraList.size(),h_fx,h_mlk,iEnd-down,iBegin);
     //int error_num=0;
     //double abs_error;
     //double total_error=0.0;
-    for(int i = 0; i < Nmc + Nmc_data; i++) {
+    for(int i = 0; i < iEnd-down; i++) {
         for(int j=0;j<nAmps;j++)
         {
             //if(abs(mlk[i][j]-h_mlk[i*nAmps+j])>0.0001) assert(0);
@@ -590,7 +596,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     //cout << "mlk error more than 0.000001 : " << error_num*100.0/(nAmps*(Nmc+Nmc_data)) << "\%  ave_error : "<< total_error/(nAmps*(Nmc+Nmc_data)) << endl;
     //error_num=0;
     //total_error=0.0;
-    for(int i=iBegin;i<iEnd;i++)
+    for(int i=iBegin;i<iEnd-down;i++)
     {
         //h_fx[i] = (h_fx[i] <= 0) ? 1e-20 : h_fx[i];
         //abs_error=abs(fx[i]-h_fx[i]);
@@ -659,7 +665,7 @@ void DPFPWAPdf::store_fx(int iBegin, int iEnd) const {
     free(h_paraList);
     free(h_fx);
     free(h_mlk);
-
+    }
 #endif
     //gpu part end!//
     Double_t sum = 0;

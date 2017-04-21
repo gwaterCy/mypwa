@@ -24,7 +24,7 @@ $(EXEC):$(OBJS)
 
 ifeq ($(MODE),GPU)
 gpuCode.o:kernel_calEva.o cu_DPFPropogator.o
-	nvcc $^ -o gpuCode.o -arch=sm_61 -dlink
+	nvcc $^ -o gpuCode.o -arch=sm_35 -dlink
 endif
 
 pwa.o:pwa.C
@@ -32,10 +32,10 @@ pwa.o:pwa.C
 
 ifeq ($(MODE),GPU)
 cu_DPFPropogator.o:cu_DPFPropogator.cu cu_DPFPropogator.h 
-	nvcc -arch=sm_61 -dc $<
+	nvcc -arch=sm_35 -dc $<
 
 kernel_calEva.o:kernel_calEva.cu cu_DPFPropogator.h kernel_calEva.h
-	nvcc -arch=sm_61 -dc $<
+	nvcc -arch=sm_35 -dc $<
 endif
 
 DPFPWAPdf.o:$(CODEDIR)/DPFPWAPdf.cc $(CODEDIR)/DPFPWAPdf.h $(CODEDIR)/cu_PWA_PARAS.h $(CODEDIR)/kernel_calEva.h
